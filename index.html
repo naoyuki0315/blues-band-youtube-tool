@@ -287,7 +287,7 @@
 
                     <div 
                       ref={listRef}
-                      className="space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200"
+                      className="space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-2 sm:p-4 rounded-lg border border-slate-200"
                     >
                       {selectedSongs.length === 0 ? (
                         <div className="text-center text-slate-400 py-8 flex flex-col items-center">
@@ -296,15 +296,15 @@
                         </div>
                       ) : (
                         selectedSongs.map((song, index) => (
-                          <div key={index} className="flex items-center justify-between bg-white p-3 rounded shadow-sm border border-slate-200 group">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <span className="bg-blue-100 text-blue-800 font-mono text-xs px-2 py-1 rounded-full w-8 text-center flex-shrink-0">{index + 1}</span>
-                              <span className="font-medium truncate">{song}</span>
+                          <div key={index} className="flex items-center justify-between bg-white p-2 sm:p-3 rounded shadow-sm border border-slate-200 group gap-1 sm:gap-2">
+                            <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-1 min-w-0">
+                              <span className="bg-blue-100 text-blue-800 font-mono text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full min-w-[1.5rem] sm:min-w-[2rem] text-center flex-shrink-0">{index + 1}</span>
+                              <span className="text-sm sm:text-base font-medium truncate flex-1">{song}</span>
                             </div>
-                            <div className="flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity flex-shrink-0">
-                              <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowUpIcon /></button>
-                              <button onClick={() => moveSong(index, 'down')} disabled={index === selectedSongs.length - 1} className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowDownIcon /></button>
-                              <button onClick={() => removeSelectedSong(index)} className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-2"><TrashIcon /></button>
+                            <div className="flex items-center gap-0 sm:gap-1 opacity-100 transition-opacity flex-shrink-0">
+                              <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1.5 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowUpIcon /></button>
+                              <button onClick={() => moveSong(index, 'down')} disabled={index === selectedSongs.length - 1} className="p-1.5 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowDownIcon /></button>
+                              <button onClick={() => removeSelectedSong(index)} className="p-1.5 sm:p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-0.5 sm:ml-2"><TrashIcon /></button>
                             </div>
                           </div>
                         ))
@@ -316,7 +316,7 @@
                         type="checkbox" id="encore-check" checked={useEncore} onChange={(e) => setUseEncore(e.target.checked)}
                         className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                       />
-                      <label htmlFor="encore-check" className="text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？ ( 曲名に（アンコール曲）を付与 )</label>
+                      <label htmlFor="encore-check" className="text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？ ( 曲名の後ろに（アンコール曲）を付与 )</label>
                     </div>
                   </div>
                 </div>
