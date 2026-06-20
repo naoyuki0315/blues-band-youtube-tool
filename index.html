@@ -7,30 +7,125 @@
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%%22 y=%2250%%22 style=%22dominant-baseline:central;text-anchor:middle;font-size:90px;%22>🎸</text></svg>">
   
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
   <script src="https://cdn.tailwindcss.com"></script>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body>
-  <div id="root"></div>
+<body class="min-h-screen bg-slate-50 text-slate-800 p-2 sm:p-4 md:p-8 font-sans pb-20">
 
-  <script type="text/babel">
-    const { useState, useMemo, useRef, useEffect, useLayoutEffect } = React;
+  <div class="max-w-6xl mx-auto">
+    
+    <header class="mb-6 border-b border-slate-200 pb-4 px-2 sm:px-0">
+      <h1 class="text-2xl sm:text-3xl font-bold flex items-center gap-3 text-slate-900">
+        <span className="text-3xl sm:text-4xl">📺</span> YouTube概要欄作成
+      </h1>
+    </header>
 
-    // --- アイコンコンポーネント ---
-    const CopyIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
-    const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>;
-    const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>;
-    const ArrowUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>;
-    const ArrowDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
-    const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
+    <div class="flex border-b border-slate-200 mb-6 bg-white rounded-t-lg overflow-hidden shadow-sm mx-1 sm:mx-0">
+      <button id="tab-preview-btn" onclick="setActiveTab('preview')" class="flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 border-blue-600 text-blue-600 bg-blue-50/50">
+        📝 作成・プレビュー
+      </button>
+      <button id="tab-songs-btn" onclick="setActiveTab('songs')" class="flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50">
+        <div class="flex items-center justify-center gap-2">
+          🎵 曲リスト
+          <span id="song-badge" class="hidden bg-blue-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-full">0</span>
+        </div>
+      </button>
+    </div>
 
-    // --- バンド設定 ---
+    <div id="error-container" class="hidden mb-4 sm:mb-6 p-3 sm:p-4 bg-amber-50 text-amber-800 text-xs sm:text-sm rounded-md border border-amber-200 mx-1 sm:mx-0"></div>
+
+    <div id="tab-preview-content" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      
+      <div class="space-y-4 sm:space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
+          <h2 class="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2">📋 Band Info</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-slate-700 mb-1">バンド名</label>
+              <select id="band-select" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                </select>
+            </div>
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-slate-700 mb-1">メンバー</label>
+              <textarea id="members-textarea" rows="6" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-slate-700 mb-1">ハッシュタグ</label>
+              <input id="hashtags-input" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sm:p-6 mx-1 sm:mx-0">
+          <div class="flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 px-1 sm:px-0">
+            <h2 id="setlist-title" class="text-base sm:text-xl font-semibold flex items-center gap-2">🎸 セットリスト (0曲)</h2>
+            <button onclick="setActiveTab('songs')" class="text-xs sm:text-sm text-blue-600 hover:underline">曲を追加する</button>
+          </div>
+
+          <div id="setlist-container" class="space-y-1.5 sm:space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-1 sm:p-4 rounded-lg border border-slate-200 scroll-smooth">
+            </div>
+
+          <div class="px-1 sm:px-0">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="encore-check" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+              <label htmlFor="encore-check" for="encore-check" class="text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？</label>
+            </div>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-1 ml-6">※曲名の後ろに（アンコール曲）を付与</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full min-h-[400px] sm:min-h-[600px] mx-1 sm:mx-0">
+        <div class="bg-slate-800 text-white px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+          <h2 class="text-base sm:text-lg font-semibold flex items-center gap-2">📝 YouTubeコピペ用出力</h2>
+          <button id="copy-btn" onclick="handleCopy()" class="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all font-medium text-xs sm:text-sm bg-blue-600 hover:bg-blue-700">
+            </button>
+        </div>
+        <div class="p-4 sm:p-6 flex-1 flex flex-col">
+          <textarea id="editable-text" class="w-full flex-1 p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          <p class="text-[10px] sm:text-xs text-slate-400 mt-2 text-right">※自由に編集できます（左側の設定を変更するとリセットされます）</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="tab-songs-content" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0 hidden">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 sm:mb-6 border-b pb-4 gap-2 sm:gap-0">
+        <div>
+          <h2 class="text-lg sm:text-xl font-semibold flex items-center gap-2">🎵 楽曲マスターリスト</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">追加ボタンを押すとセットリストに入ります。</p>
+        </div>
+        <span id="loading-indicator" class="hidden text-[10px] sm:text-xs font-normal text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-2">
+          <span class="animate-spin inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full"></span> CSV読込中...
+        </span>
+      </div>
+
+      <form id="master-song-form" class="flex gap-2 mb-6 sm:mb-8 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
+        <input id="master-song-input" type="text" placeholder="CSVにない新しい曲名を追加..." class="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm">
+        <button type="submit" class="bg-slate-800 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-slate-700 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm font-medium whitespace-nowrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span class="hidden sm:inline">マスターに追加</span><span class="sm:hidden">追加</span>
+        </button>
+      </form>
+
+      <div id="master-songs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+        </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- インラインSVGアイコンの定義 ---
+    const icons = {
+      copy: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+      check: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+      trash: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+      up: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`,
+      down: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`
+    };
+
+    // --- バンドマスターデータ ---
     const BAND_INFO = {
       "Drop Down Mama": `Vocal/Guitar:今井さん\nVocal/Harp:スズナ\nGuitar:グミさん\nBass:戸田さん\nDrums:安永さん\nPiano:ヨッシー`,
       "2120B.B.": `Vocal/Guitar:今井さん\nVocal/Harp:スズナ\nGuitar:グミさん\nBass:芳賀さん\nDrums:安永さん\nPiano:ヨッシー`
@@ -38,374 +133,317 @@
     const BAND_CHOICES = Object.keys(BAND_INFO);
     const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #PostWarBlues #BluesMusic";
 
-    function App() {
-      const [activeTab, setActiveTab] = useState('preview');
-      const [bandName, setBandName] = useState(BAND_CHOICES[0]);
-      const [members, setMembers] = useState(BAND_INFO[BAND_CHOICES[0]]);
-      const [hashtags, setHashtags] = useState(DEFAULT_HASHTAGS);
-      
-      const [masterSongs, setMasterSongs] = useState([]);
-      const [newSongInput, setNewSongInput] = useState("");
-      const [isLoadingSongs, setIsLoadingSongs] = useState(true);
-      const [fetchError, setFetchError] = useState("");
-      
-      const [selectedSongs, setSelectedSongs] = useState([]);
-      const [useEncore, setUseEncore] = useState(true);
-      const [isCopied, setIsCopied] = useState(false);
-      
-      const listRef = useRef(null);
-      const [pendingScroll, setPendingScroll] = useState(null);
-      const [editableText, setEditableText] = useState("");
+    // --- アプリケーションのグローバル状態管理 (State) ---
+    let state = {
+      activeTab: 'preview',
+      bandName: BAND_CHOICES[0],
+      members: BAND_INFO[BAND_CHOICES[0]],
+      hashtags: DEFAULT_HASHTAGS,
+      masterSongs: [],
+      selectedSongs: [],
+      useEncore: true,
+      isCopied: false
+    };
 
-      const handleBandChange = (e) => {
-        const newBand = e.target.value;
-        setBandName(newBand);
-        setMembers(BAND_INFO[newBand]);
-      };
-
-      // CSV読み込み（file:// スキーム対策付き）
-      useEffect(() => {
-        setIsLoadingSongs(true);
-        
-        // ブラウザがローカルファイル制限に引っかかっているかチェック
-        if (window.location.protocol === 'file:') {
-          setFetchError("ローカルファイル(file://)として開かれているため、セキュリティー制限により master_data.csv を自動読み込みできません。下のフォームから曲を追加するか、ローカルサーバー（Live Server等）を起動してください。");
-          setIsLoadingSongs(false);
-          return;
-        }
-
-        if (typeof Papa === 'undefined') {
-          setFetchError("PapaParse ライブラリの読み込みに失敗しました。ネット接続を確認してください。");
-          setIsLoadingSongs(false);
-          return;
-        }
-
-         Papa.parse('master_data.csv', {
-          download: true,
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              if (results && results.data) {
-                const songs = results.data
-                  .map(row => row['楽曲名'])
-                  .filter(song => song && song.trim() !== "");
-                
-                if (songs.length > 0) {
-                  const uniqueSongs = Array.from(new Set(songs));
-                  setMasterSongs(uniqueSongs);
-                } else {
-                  setFetchError("CSVから楽曲名を取得できませんでした。「楽曲名」という列名が存在するか確認してください。");
-                }
-              }
-            } catch (err) {
-              setFetchError("データのパースに失敗しました。");
-            } finally {
-              setIsLoadingSongs(false);
-            }
-          },
-          error: () => {
-            setFetchError("master_data.csv の読み込みに失敗しました。ファイルがHTMLと同じフォルダにあるか確認してください。");
-            setIsLoadingSongs(false);
-          }
-        });
-      }, []);
-
-      const handleAddSongToMaster = (e) => {
-        e.preventDefault();
-        const trimmed = newSongInput.trim();
-        if (trimmed && !masterSongs.includes(trimmed)) {
-          setMasterSongs([trimmed, ...masterSongs]);
-          setNewSongInput("");
-        }
-      };
-
-      const toggleSongSelection = (song) => {
-        if (selectedSongs.includes(song)) {
-          setSelectedSongs(selectedSongs.filter(s => s !== song));
-        } else {
-          setSelectedSongs([...selectedSongs, song]);
-        }
-      };
-
-      const removeSelectedSong = (index) => {
-        const newSelected = [...selectedSongs];
-        newSelected.splice(index, 1);
-        setSelectedSongs(newSelected);
-      };
-
-      const moveSong = (index, direction) => {
-        if (direction === 'up' && index === 0) return;
-        if (direction === 'down' && index === selectedSongs.length - 1) return;
-
-        const container = listRef.current;
-        if (!container) return;
-
-        const itemElement = container.children[index];
-        const prevY = itemElement ? itemElement.getBoundingClientRect().top : 0;
-
-        const newSelected = [...selectedSongs];
-        let newIndex = index;
-        if (direction === 'up') {
-          [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
-          newIndex = index - 1;
-        } else {
-          [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
-          newIndex = index + 1;
-        }
-
-        setPendingScroll({ newIndex, prevY });
-        setSelectedSongs(newSelected);
-      };
-
-      useLayoutEffect(() => {
-        if (pendingScroll && listRef.current) {
-          const { newIndex, prevY } = pendingScroll;
-          const newItemElement = listRef.current.children[newIndex];
-          if (newItemElement) {
-            const currentY = newItemElement.getBoundingClientRect().top;
-            const diff = currentY - prevY;
-            listRef.current.scrollTop += diff;
-          }
-          setPendingScroll(null);
-        }
-      }, [selectedSongs, pendingScroll]);
-
-      const generatedText = useMemo(() => {
-        const lines = [];
-        lines.push("");
-        lines.push(`🎵 【 ${bandName.toUpperCase()} 】 🎵`);
-        lines.push("LIVE PERFORMANCE");
-        lines.push("");
-        lines.push("■ Members");
-        lines.push(members);
-        lines.push("");
-        lines.push("■ Timestamps (Chapters)");
-        lines.push("00:00 Intro / Greeting (準備・挨拶)");
-        
-        selectedSongs.forEach((song, index) => {
-          let displayName = song;
-          if (useEncore && index === selectedSongs.length - 1) {
-            displayName = `${song}（アンコール曲）`;
-          }
-          lines.push(`00:00 ${displayName}`);
-        });
-        
-        lines.push("");
-        lines.push("■ Hashtags");
-        lines.push(hashtags);
-        
-        return lines.join("\n");
-      }, [bandName, members, hashtags, selectedSongs, useEncore]);
-
-      useEffect(() => {
-        setEditableText(generatedText);
-      }, [generatedText]);
-
-      // モダンなClipboard APIに変更
-      const handleCopy = async () => {
-        try {
-          await navigator.clipboard.writeText(editableText);
-          setIsCopied(true);
-          setTimeout(() => setIsCopied(false), 2000);
-        } catch (err) {
-          console.error('Failed to copy', err);
-        }
-      };
-
-      return (
-        <div className="min-h-screen bg-slate-50 text-slate-800 p-2 sm:p-4 md:p-8 font-sans pb-20">
-          <div className="max-w-6xl mx-auto">
-            
-            <header className="mb-6 border-b border-slate-200 pb-4 px-2 sm:px-0">
-              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 text-slate-900">
-                <span className="text-3xl sm:text-4xl">📺</span> YouTube概要欄作成
-              </h1>
-            </header>
-
-            <div className="flex border-b border-slate-200 mb-6 bg-white rounded-t-lg overflow-hidden shadow-sm mx-1 sm:mx-0">
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 ${activeTab === 'preview' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-              >
-                📝 作成・プレビュー
-              </button>
-              <button
-                onClick={() => setActiveTab('songs')}
-                className={`flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 ${activeTab === 'songs' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  🎵 曲リスト
-                  {selectedSongs.length > 0 && (
-                    <span className="bg-blue-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-full">{selectedSongs.length}</span>
-                  )}
-                </div>
-              </button>
-            </div>
-
-            {activeTab === 'preview' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2">📋 Band Info</h2>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">バンド名</label>
-                        <select 
-                          value={bandName}
-                          onChange={handleBandChange}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-                        >
-                          {BAND_CHOICES.map(band => <option key={band} value={band}>{band}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">メンバー</label>
-                        <textarea 
-                          value={members}
-                          onChange={(e) => setMembers(e.target.value)}
-                          rows={6}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">ハッシュタグ</label>
-                        <input 
-                          type="text" 
-                          value={hashtags}
-                          onChange={(e) => setHashtags(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sm:p-6 mx-1 sm:mx-0">
-                    <div className="flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 px-1 sm:px-0">
-                      <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">🎸 セットリスト ({selectedSongs.length}曲)</h2>
-                      <button onClick={() => setActiveTab('songs')} className="text-xs sm:text-sm text-blue-600 hover:underline">曲を追加する</button>
-                    </div>
-
-                    <div 
-                      ref={listRef}
-                      className="space-y-1.5 sm:space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-1 sm:p-4 rounded-lg border border-slate-200 scroll-smooth"
-                    >
-                      {selectedSongs.length === 0 ? (
-                        <div className="text-center text-slate-400 py-8 flex flex-col items-center">
-                          <span className="text-4xl mb-2">📄</span>
-                          <p className="text-sm">曲が選択されていません。<br/>「曲リスト」タブから追加してください。</p>
-                        </div>
-                      ) : (
-                        selectedSongs.map((song, index) => (
-                          <div key={index} className="flex items-center justify-between bg-white p-1.5 sm:p-3 rounded shadow-sm border border-slate-200 group gap-0.5 sm:gap-2">
-                            <div className="flex items-center gap-1 sm:gap-3 overflow-hidden flex-1 min-w-0">
-                              <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30 flex-shrink-0"><ArrowUpIcon /></button>
-                              <span className="bg-blue-100 text-blue-800 font-mono text-[9px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full min-w-[1.2rem] sm:min-w-[2rem] text-center flex-shrink-0">{index + 1}</span>
-                              <span className="text-[11px] sm:text-base font-medium truncate flex-1 leading-tight">{song}</span>
-                            </div>
-                            <div className="flex items-center gap-0 sm:gap-1 opacity-100 transition-opacity flex-shrink-0">
-                              <button onClick={() => moveSong(index, 'down')} disabled={index === selectedSongs.length - 1} className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowDownIcon /></button>
-                              <button onClick={() => removeSelectedSong(index)} className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-0.5 sm:ml-2"><TrashIcon /></button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    <div className="px-1 sm:px-0">
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" id="encore-check" checked={useEncore} onChange={(e) => setUseEncore(e.target.checked)}
-                          className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                        />
-                        <label htmlFor="encore-check" className="text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？</label>
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-1 ml-6">※曲名の後ろに（アンコール曲）を付与</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full min-h-[400px] sm:min-h-[600px] mx-1 sm:mx-0">
-                  <div className="bg-slate-800 text-white px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
-                    <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">📝 YouTubeコピペ用出力</h2>
-                    <button 
-                      onClick={handleCopy}
-                      className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all font-medium text-xs sm:text-sm ${isCopied ? "bg-green-500 hover:bg-green-600" : "bg-blue-600 hover:bg-blue-700"}`}
-                    >
-                      {isCopied ? <CheckIcon /> : <CopyIcon />} {isCopied ? "コピー完了" : "コピーする"}
-                    </button>
-                  </div>
-                  <div className="p-4 sm:p-6 flex-1 flex flex-col">
-                    <textarea 
-                      value={editableText}
-                      onChange={(e) => setEditableText(e.target.value)}
-                      className="w-full flex-1 p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-[10px] sm:text-xs text-slate-400 mt-2 text-right">※自由に編集できます（左側の設定を変更するとリセットされます）</p>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {activeTab === 'songs' && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 sm:mb-6 border-b pb-4 gap-2 sm:gap-0">
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">🎵 楽曲マスターリスト</h2>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1">追加ボタンを押すとセットリストに入ります。</p>
-                  </div>
-                  {isLoadingSongs && (
-                    <span className="text-[10px] sm:text-xs font-normal text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-2">
-                      <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full"></span> CSV読込中...
-                    </span>
-                  )}
-                </div>
-
-                {fetchError && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-amber-50 text-amber-800 text-xs sm:text-sm rounded-md border border-amber-200">{fetchError}</div>
-                )}
-
-                <form onSubmit={handleAddSongToMaster} className="flex gap-2 mb-6 sm:mb-8 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
-                  <input 
-                    type="text" placeholder="CSVにない新しい曲名を追加..." value={newSongInput} onChange={(e) => setNewSongInput(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
-                  />
-                  <button type="submit" disabled={!newSongInput.trim()} className="bg-slate-800 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm font-medium whitespace-nowrap">
-                    <PlusIcon /> <span className="hidden sm:inline">マスターに追加</span><span className="sm:hidden">追加</span>
-                  </button>
-                </form>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                  {masterSongs.map((song, idx) => {
-                    const isSelected = selectedSongs.includes(song);
-                    return (
-                      <div key={idx} onClick={() => toggleSongSelection(song)} className={`flex items-center p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors gap-2 sm:gap-3 ${isSelected ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
-                        <button 
-                          className={`flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold transition-all ${isSelected ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600'}`}
-                        >
-                          {isSelected ? '削除' : '追加'}
-                        </button>
-                        <span className={`font-medium text-xs sm:text-sm truncate ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>{song}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {masterSongs.length === 0 && !isLoadingSongs && !fetchError && (
-                   <p className="text-center py-8 text-sm text-slate-500">曲データがありません。</p>
-                )}
-              </div>
-            )}
-
-          </div>
-        </div>
-      );
+    // HTMLエスケープ（セキュリティ・バグ対策）
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    // --- タブ切り替え制御 ---
+    window.setActiveTab = (tab) => {
+      state.activeTab = tab;
+      const previewBtn = document.getElementById('tab-preview-btn');
+      const songsBtn = document.getElementById('tab-songs-btn');
+      const previewContent = document.getElementById('tab-preview-content');
+      const songsContent = document.getElementById('tab-songs-content');
+
+      if (tab === 'preview') {
+        previewBtn.className = "flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 border-blue-600 text-blue-600 bg-blue-50/50";
+        songsBtn.className = "flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50";
+        previewContent.classList.remove('hidden');
+        songsContent.classList.add('hidden');
+        renderSetlist();
+      } else {
+        previewBtn.className = "flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50";
+        songsBtn.className = "flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 border-blue-600 text-blue-600 bg-blue-50/50";
+        previewContent.classList.add('hidden');
+        songsContent.classList.remove('hidden');
+        renderMasterSongs();
+      }
+    };
+
+    // --- セットリスト側の描画処理 ---
+    function renderSetlist() {
+      const container = document.getElementById('setlist-container');
+      document.getElementById('setlist-title').textContent = `🎸 セットリスト (${state.selectedSongs.length}曲)`;
+      
+      if (state.selectedSongs.length === 0) {
+        container.innerHTML = `
+          <div class="text-center text-slate-400 py-8 flex flex-col items-center">
+            <span class="text-4xl mb-2">📄</span>
+            <p class="text-sm">曲が選択されていません。<br/>「曲リスト」タブから追加してください。</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = state.selectedSongs.map((song, index) => {
+        const isFirst = index === 0;
+        const isLast = index === state.selectedSongs.length - 1;
+        return `
+          <div class="flex items-center justify-between bg-white p-1.5 sm:p-3 rounded shadow-sm border border-slate-200 group gap-0.5 sm:gap-2">
+            <div class="flex items-center gap-1 sm:gap-3 overflow-hidden flex-1 min-w-0">
+              <button onclick="moveSong(${index}, 'up')" ${isFirst ? 'disabled' : ''} class="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30 flex-shrink-0">${icons.up}</button>
+              <span class="bg-blue-100 text-blue-800 font-mono text-[9px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full min-w-[1.2rem] sm:min-w-[2rem] text-center flex-shrink-0">${index + 1}</span>
+              <span class="text-[11px] sm:text-base font-medium truncate flex-1 leading-tight">${escapeHtml(song)}</span>
+            </div>
+            <div class="flex items-center gap-0 sm:gap-1 opacity-100 transition-opacity flex-shrink-0">
+              <button onclick="moveSong(${index}, 'down')" ${isLast ? 'disabled' : ''} class="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30">${icons.down}</button>
+              <button onclick="removeSelectedSong(${index})" class="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-0.5 sm:ml-2">${icons.trash}</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // --- 曲の並び替え（連打スクロール追従完全移植） ---
+    window.moveSong = (index, direction) => {
+      if (direction === 'up' && index === 0) return;
+      if (direction === 'down' && index === state.selectedSongs.length - 1) return;
+
+      const container = document.getElementById('setlist-container');
+      const itemElement = container.children[index];
+      const prevY = itemElement ? itemElement.getBoundingClientRect().top : 0;
+
+      let newIndex = index;
+      if (direction === 'up') {
+        [state.selectedSongs[index - 1], state.selectedSongs[index]] = [state.selectedSongs[index], state.selectedSongs[index - 1]];
+        newIndex = index - 1;
+      } else {
+        [state.selectedSongs[index + 1], state.selectedSongs[index]] = [state.selectedSongs[index], state.selectedSongs[index + 1]];
+        newIndex = index + 1;
+      }
+
+      // 同期的に最速レンダリング
+      renderSetlist();
+      generateYoutubeText();
+
+      // 移動後の差分スクロール補正
+      const newItemElement = container.children[newIndex];
+      if (newItemElement) {
+        const currentY = newItemElement.getBoundingClientRect().top;
+        const diff = currentY - prevY;
+        container.scrollTop += diff;
+      }
+    };
+
+    // 選択された曲をリストから削除
+    window.removeSelectedSong = (index) => {
+      state.selectedSongs.splice(index, 1);
+      renderSetlist();
+      updateSongBadge();
+      generateYoutubeText();
+    };
+
+    // --- マスター曲リスト側の描画処理 ---
+    function renderMasterSongs() {
+      const grid = document.getElementById('master-songs-grid');
+      if (state.masterSongs.length === 0) {
+        grid.parentNode.querySelector('.text-center')?.remove(); 
+        grid.insertAdjacentHTML('afterend', `<p class="text-center py-8 text-sm text-slate-500 temporary-empty">曲データがありません。</p>`);
+        grid.innerHTML = '';
+        return;
+      }
+      
+      const emptyMsg = grid.parentNode.querySelector('.temporary-empty');
+      if (emptyMsg) emptyMsg.remove();
+
+      grid.innerHTML = state.masterSongs.map((song) => {
+        const isSelected = state.selectedSongs.includes(song);
+        return `
+          <div onclick="toggleSongSelection('${escapeHtml(song).replace(/'/g, "\\'")}')" class="flex items-center p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors gap-2 sm:gap-3 ${isSelected ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}">
+            <button class="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold transition-all ${isSelected ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600'}">
+              ${isSelected ? '削除' : '追加'}
+            </button>
+            <span class="font-medium text-xs sm:text-sm truncate ${isSelected ? 'text-blue-900' : 'text-slate-700'}">${escapeHtml(song)}</span>
+          </div>`;
+      }).join('');
+    }
+
+    // マスターリスト内での選択トグル
+    window.toggleSongSelection = (song) => {
+      if (state.selectedSongs.includes(song)) {
+        state.selectedSongs = state.selectedSongs.filter(s => s !== song);
+      } else {
+        state.selectedSongs.push(song);
+      }
+      renderMasterSongs();
+      updateSongBadge();
+      generateYoutubeText();
+    };
+
+    // ナビゲーションバッジの更新
+    function updateSongBadge() {
+      const badge = document.getElementById('song-badge');
+      if (state.selectedSongs.length > 0) {
+        badge.textContent = state.selectedSongs.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // --- YouTubeテキストのリアルタイム自動生成ロジック ---
+    function generateYoutubeText() {
+      const lines = [];
+      lines.push("");
+      lines.push(`🎵 【 ${state.bandName.toUpperCase()} 】 🎵`);
+      lines.push("LIVE PERFORMANCE");
+      lines.push("");
+      lines.push("■ Members");
+      lines.push(state.members);
+      lines.push("");
+      lines.push("■ Timestamps (Chapters)");
+      lines.push("00:00 Intro / Greeting (準備・挨拶)");
+      
+      state.selectedSongs.forEach((song, index) => {
+        let displayName = song;
+        if (state.useEncore && index === state.selectedSongs.length - 1) {
+          displayName = `${song}（アンコール曲）`;
+        }
+        lines.push(`00:00 ${displayName}`);
+      });
+      
+      lines.push("");
+      lines.push("■ Hashtags");
+      lines.push(state.hashtags);
+      
+      document.getElementById('editable-text').value = lines.join("\n");
+    }
+
+    // --- コピー機能 (Modern Clipboard API) ---
+    window.handleCopy = async () => {
+      const text = document.getElementById('editable-text').value;
+      const copyBtn = document.getElementById('copy-btn');
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.className = "flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all font-medium text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white";
+        copyBtn.innerHTML = `${icons.check} コピー完了`;
+        setTimeout(() => {
+          copyBtn.className = "flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all font-medium text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white";
+          copyBtn.innerHTML = `${icons.copy} コピーする`;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy', err);
+      }
+    };
+
+    // --- CSV読み込み処理（エラーハンドリング付き） ---
+    function loadCsvData() {
+      const errorContainer = document.getElementById('error-container');
+      const loadingIndicator = document.getElementById('loading-indicator');
+      
+      loadingIndicator.classList.remove('hidden');
+
+      // ローカルファイル制限（CORS）の早期検知
+      if (window.location.protocol === 'file:') {
+        errorContainer.textContent = "【警告】ローカルファイル(file://)として直接開かれているため、ブラウザの制限で master_data.csv を自動読込できませんでした。下のフォームから曲を追加するか、VS Codeの「Live Server」等を使うと自動読込が動きます。";
+        errorContainer.classList.remove('hidden');
+        loadingIndicator.classList.add('hidden');
+        return;
+      }
+
+      if (typeof Papa === 'undefined') {
+        errorContainer.textContent = "PapaParse ライブラリの読み込みに失敗しました。インターネット接続を確認してください。";
+        errorContainer.classList.remove('hidden');
+        loadingIndicator.classList.add('hidden');
+        return;
+      }
+
+      Papa.parse('master_data.csv', {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          loadingIndicator.classList.add('hidden');
+          if (results && results.data) {
+            try {
+              const songs = results.data
+                .map(row => row['楽曲名'])
+                .filter(song => song && song.trim() !== "");
+              
+              if (songs.length > 0) {
+                state.masterSongs = Array.from(new Set(songs));
+                renderMasterSongs();
+              } else {
+                errorContainer.textContent = "master_data.csv から「楽曲名」を取得できませんでした。列名が正しく『楽曲名』になっているか確認してください。";
+                errorContainer.classList.remove('hidden');
+              }
+            } catch (e) {
+              errorContainer.textContent = "CSVの解析中にエラーが発生しました。";
+              errorContainer.classList.remove('hidden');
+            }
+          }
+        },
+        error: () => {
+          loadingIndicator.classList.add('hidden');
+          errorContainer.textContent = "master_data.csv の読込に失敗しました。HTMLと同じ場所にファイルがあるか確認してください。";
+          errorContainer.classList.remove('hidden');
+        }
+      });
+    }
+
+    // --- アプリケーションの初期化起動 ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. セレクトボックスの初期生成
+      const select = document.getElementById('band-select');
+      select.innerHTML = BAND_CHOICES.map(band => `<option value="${band}">${band}</option>`).join('');
+      
+      // 2. テキスト初期流し込み
+      document.getElementById('members-textarea').value = state.members;
+      document.getElementById('hashtags-input').value = state.hashtags;
+      document.getElementById('copy-btn').innerHTML = `${icons.copy} コピーする`;
+
+      // 3. イベントリスナー各種設定
+      select.addEventListener('change', (e) => {
+        state.bandName = e.target.value;
+        state.members = BAND_INFO[state.bandName];
+        document.getElementById('members-textarea').value = state.members;
+        generateYoutubeText();
+      });
+
+      document.getElementById('members-textarea').addEventListener('input', (e) => {
+        state.members = e.target.value;
+        generateYoutubeText();
+      });
+
+      document.getElementById('hashtags-input').addEventListener('input', (e) => {
+        state.hashtags = e.target.value;
+        generateYoutubeText();
+      });
+
+      document.getElementById('encore-check').addEventListener('change', (e) => {
+        state.useEncore = e.target.checked;
+        generateYoutubeText();
+      });
+
+      // 手動マスター追加フォームの処理
+      document.getElementById('master-song-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('master-song-input');
+        const trimmed = input.value.trim();
+        if (trimmed && !state.masterSongs.includes(trimmed)) {
+          state.masterSongs.unshift(trimmed);
+          input.value = '';
+          renderMasterSongs();
+        }
+      });
+
+      // 4. 初回データ読み込み & レンダー
+      loadCsvData();
+      renderSetlist();
+      generateYoutubeText();
+    });
   </script>
 </body>
 </html>
