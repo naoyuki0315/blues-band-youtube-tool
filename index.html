@@ -5,15 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube概要欄作成システム</title>
   
+  <!-- ファビコン: ブルースっぽくギターの絵文字を設定 -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%%22 y=%2250%%22 style=%22dominant-baseline:central;text-anchor:middle;font-size:90px;%22>🎸</text></svg>">
   
+  <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- PapaParse (CSV読み込み用) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -37,9 +42,6 @@
     };
     const BAND_CHOICES = Object.keys(BAND_INFO);
     const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #PostWarBlues #BluesMusic";
-
-    // 指定いただいたGoogleスプレッドシートのCSV公開URL
-    const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzWOELNEzNkvAb1Nld1Tjzv0_Z5mvRvuQdeH20jy-LYP0cycHgpWcpR6rcSBFqm-5lGKZYLgSmW4cg/pub?gid=842461559&single=true&output=csv";
 
     // メインコンポーネント
     function App() {
@@ -71,37 +73,36 @@
       const handleBandChange = (e) => {
         const newBand = e.target.value;
         setBandName(newBand);
-        setMembers(BAND_INFO[newBand]);
+        setMembers(BAND_INFO[newBand]); // メンバーを自動切り替え
       };
 
-      // CSV読み込み（Googleスプレッドシート仕様）
+      // CSV読み込み
       useEffect(() => {
         setIsLoadingSongs(true);
-        Papa.parse(SPREADSHEET_CSV_URL, {
+        Papa.parse('master_data.csv', {
           download: true,
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
             try {
-              // 列名が「楽曲名」で取れない場合、自動的にスプレッドシートの「最初の列」を取得する安全仕様
               const songs = results.data
-                .map(row => row['楽曲名'] || Object.values(row)[0])
+                .map(row => row['楽曲名'])
                 .filter(song => song && song.trim() !== "");
               
               if (songs.length > 0) {
                 const uniqueSongs = Array.from(new Set(songs));
                 setMasterSongs(uniqueSongs);
               } else {
-                setFetchError("スプレッドシートから楽曲名を取得できませんでした。データが空か、公開設定を確認してください。");
+                setFetchError("CSVから楽曲名を取得できませんでした。「楽曲名」という列名が存在するか確認してください。");
               }
             } catch (err) {
-              setFetchError("データの読み込み・解析に失敗しました。");
+              setFetchError("データの読み込みに失敗しました。");
             } finally {
               setIsLoadingSongs(false);
             }
           },
           error: () => {
-            setFetchError("GoogleスプレッドシートのCSV取得に失敗しました。URLの有効性、またはWeb公開設定を確認してください。");
+            setFetchError("master_data.csv の読み込みに失敗しました。（※GitHub Pages等で公開後に正常に動作します）");
             setIsLoadingSongs(false);
           }
         });
@@ -117,7 +118,7 @@
         }
       };
 
-      // 曲の選択状態を切り替え
+      // 曲の選択状態を切り替え（追加・削除）
       const toggleSongSelection = (song) => {
         if (selectedSongs.includes(song)) {
           setSelectedSongs(selectedSongs.filter(s => s !== song));
@@ -133,7 +134,7 @@
         setSelectedSongs(newSelected);
       };
 
-      // 選択済みの曲の順番を移動
+      // 選択済みの曲の順番を移動（連打できるようにスクロール位置を記憶）
       const moveSong = (index, direction) => {
         if (direction === 'up' && index === 0) return;
         if (direction === 'down' && index === selectedSongs.length - 1) return;
@@ -141,6 +142,7 @@
         const container = listRef.current;
         if (!container) return;
 
+        // 移動前の要素の画面上のY座標を取得
         const itemElement = container.children[index];
         const prevY = itemElement.getBoundingClientRect().top;
 
@@ -154,17 +156,20 @@
           newIndex = index + 1;
         }
 
+        // 次の描画でスクロール位置を調整するためのデータをセット
         setPendingScroll({ newIndex, prevY });
         setSelectedSongs(newSelected);
       };
 
-      // DOM更新後にスクロール位置を調整
+      // DOM更新後にスクロール位置を調整する（連打追従機能）
       useLayoutEffect(() => {
         if (pendingScroll && listRef.current) {
           const { newIndex, prevY } = pendingScroll;
           const newItemElement = listRef.current.children[newIndex];
           if (newItemElement) {
+            // 移動後の要素の画面上のY座標を取得
             const currentY = newItemElement.getBoundingClientRect().top;
+            // 差分だけ親コンテナをスクロールさせて、要素が画面上で動かないようにする
             const diff = currentY - prevY;
             listRef.current.scrollTop += diff;
           }
@@ -313,6 +318,7 @@
                             <div className="flex items-center gap-1 sm:gap-3 overflow-hidden flex-1 min-w-0">
                               <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30 flex-shrink-0"><ArrowUpIcon /></button>
                               <span className="bg-blue-100 text-blue-800 font-mono text-[9px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full min-w-[1.2rem] sm:min-w-[2rem] text-center flex-shrink-0">{index + 1}</span>
+                              {/* フォントサイズをスマホ時は 11px に指定して0.8倍相当に縮小 */}
                               <span className="text-[11px] sm:text-base font-medium truncate flex-1 leading-tight">{song}</span>
                             </div>
                             <div className="flex items-center gap-0 sm:gap-1 opacity-100 transition-opacity flex-shrink-0">
@@ -372,7 +378,7 @@
                   </div>
                   {isLoadingSongs && (
                     <span className="text-[10px] sm:text-xs font-normal text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-2">
-                      <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full"></span> スプレッドシート読込中...
+                      <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full"></span> CSV読込中...
                     </span>
                   )}
                 </div>
@@ -384,7 +390,7 @@
                 {/* 手動追加フォーム */}
                 <form onSubmit={handleAddSongToMaster} className="flex gap-2 mb-6 sm:mb-8 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
                   <input 
-                    type="text" placeholder="スプレッドシートにない新しい曲名を追加..." value={newSongInput} onChange={(e) => setNewSongInput(e.target.value)}
+                    type="text" placeholder="CSVにない新しい曲名を追加..." value={newSongInput} onChange={(e) => setNewSongInput(e.target.value)}
                     className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                   />
                   <button type="submit" disabled={!newSongInput.trim()} className="bg-slate-800 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm font-medium whitespace-nowrap">
