@@ -1,647 +1,430 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CHICAGO Setlist Builder</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%231A2B3C%22/><text x=%2250%22 y=%2265%22 font-family=%22Impact, Arial, sans-serif%22 font-size=%2238%22 text-anchor=%22middle%22 fill=%22%23D8C38E%22>DDM</text></svg>">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-    
-    <style>
-        /* アニメーションと基本設定 */
-        body { -webkit-tap-highlight-color: transparent; }
-        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* 印刷（A4・1枚）の極限最適化レイアウト */
-        @media print {
-            @page { size: A4 portrait; margin: 10mm; }
-            body { background-color: white !important; margin: 0 !important; color: black !important; }
-            .print-hidden { display: none !important; }
-            .print-only { display: flex !important; }
-            
-            /* 1枚にピタッと収め、行間を最大化する魔法のフレックスボックス */
-            #print-container {
-                display: flex;
-                flex-direction: column;
-                min-height: 270mm; /* 16曲以上の時は伸びるようにmin-heightに変更 */
-                width: 100%;
-            }
-            .print-header { flex-shrink: 0; margin-bottom: 5mm; }
-            .print-table-container {
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                border: 2px solid black;
-            }
-            
-            .print-extra { color: #666; font-style: italic; background-color: #f9f9f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
-        }
-        .print-only { display: none; }
-
-        /* --- 指定比率のグリッドレイアウト --- */
-        .print-grid-row {
-            display: grid;
-            grid-template-columns: 6.4% 58.6% 9% 10% 8% 8%;
-            grid-template-rows: 1fr auto; 
-            flex-grow: 1; 
-            min-height: 16mm; 
-            page-break-inside: avoid;
-            border-bottom: 1px solid #444;
-        }
-        .print-grid-row:last-child { border-bottom: none; }
-        
-        .pg-no { grid-column: 1; grid-row: 1 / 3; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; font-size: 1.4rem; font-weight: bold; }
-        .pg-title { grid-column: 2; grid-row: 1; display: flex; align-items: center; justify-content: flex-start; padding: 0 10px; border-right: 1px solid #444; text-align: left; }
-        .pg-key { grid-column: 3; grid-row: 1; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; font-size: 1.4rem; font-weight: bold; }
-        .pg-harp { grid-column: 4; grid-row: 1; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; font-size: 1.4rem; font-weight: bold; }
-        .pg-bpm { grid-column: 5; grid-row: 1; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; font-size: 1.4rem; font-weight: bold; }
-        .pg-time { grid-column: 6; grid-row: 1; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; }
-        
-        /* 備考欄（左寄せを徹底） */
-        .pg-memo {
-            grid-column: 2 / 7;
-            grid-row: 2;
-            padding: 2px 10px 4px 10px;
-            font-size: 1.0rem;
-            color: #333;
-            white-space: pre-wrap;
-            line-height: 1.2;
-            text-align: left; 
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        /* ヘッダー用 */
-        .print-grid-header {
-            display: grid;
-            grid-template-columns: 6.4% 58.6% 9% 10% 8% 8%;
-            background-color: #e5e7eb;
-            border-bottom: 2px solid black;
-            height: 35px;
-        }
-        .print-grid-header > div {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            border-right: 1px solid #444;
-        }
-        .print-grid-header > div:last-child {
-            border-right: none;
-        }
-
-        .print-song-title { font-size: 1.6rem; font-weight: bold; width: 100%; line-height: 1.1; text-align: left; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube概要欄作成システム</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%%22 y=%2250%%22 style=%22dominant-baseline:central;text-anchor:middle;font-size:90px;%22>🎸</text></svg>">
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-900 font-sans">
-    <div id="root"></div>
+<body>
+  <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        const { useState, useEffect, useRef } = React;
+  <script type="text/babel">
+    const { useState, useMemo, useRef, useEffect, useLayoutEffect } = React;
 
-        const FALLBACK_DATA = [
-            { 楽曲名: "Born in Chicago", Key: "A", "Harp (Pos)": "D (2nd)", BPM: "130", Time: "3:15", "備考・演奏指示": "カウントから激しくスタート" },
-            { 楽曲名: "Got My Mojo Workin'", Key: "E", "Harp (Pos)": "A (2nd)", BPM: "150", Time: "4:20", "備考・演奏指示": "後半テンポアップ、ハープソロ炸裂" },
-            { 楽曲名: "Sweet Home Chicago", Key: "E", "Harp (Pos)": "A (2nd)", BPM: "110", Time: "5:00", "備考・演奏指示": "バッキング、ギターソロ交代" },
-            { 楽曲名: "Help Me", Key: "Am", "Harp (Pos)": "D (2nd)", BPM: "85", Time: "4:45", "備考・演奏指示": "妖しいストレートスローブルース" },
-            { 楽曲名: "Checking Up On My Baby", Key: "A", "Harp (Pos)": "D (2nd)", BPM: "125", Time: "3:50", "備考・演奏指示": "イントロハープからリフ固定" }
-        ].map((song, i) => ({ ...song, id: `song_${i}` }));
+    // --- アイコンコンポーネント ---
+    const CopyIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+    const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>;
+    const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>;
+    const ArrowUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>;
+    const ArrowDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
+    const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
 
-        const parseCSV = (text) => {
-            const parseLine = (line) => {
-                const result = [];
-                let current = '';
-                let inQuotes = false;
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        result.push(current);
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                result.push(current);
-                return result.map(s => s.trim().replace(/^"|"$/g, ''));
-            };
+    // --- バンド設定 ---
+    const BAND_INFO = {
+      "Drop Down Mama": `Vocal/Guitar:今井さん\nVocal/Harp:スズナ\nGuitar:グミさん\nBass:戸田さん\nDrums:安永さん\nPiano:ヨッシー`,
+      "2120B.B.": `Vocal/Guitar:今井さん\nVocal/Harp:スズナ\nGuitar:グミさん\nBass:芳賀さん\nDrums:安永さん\nPiano:ヨッシー`
+    };
+    const BAND_CHOICES = Object.keys(BAND_INFO);
+    const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #PostWarBlues #BluesMusic";
 
-            const lines = text.split('\n').filter(line => line.trim() !== '');
-            if (lines.length < 2) return [];
-            const headers = parseLine(lines[0]);
-            
-            return lines.slice(1).map((line, idx) => {
-                const values = parseLine(line);
-                const obj = { id: `csv_${idx}` };
-                headers.forEach((header, index) => {
-                    obj[header] = values[index] !== undefined ? values[index] : '';
-                });
-                
-                obj['楽曲名'] = obj['楽曲名'] || obj['曲名'] || values[0] || '';
-                obj['Key'] = obj['Key'] || obj['キー'] || values[1] || '';
-                obj['Time'] = obj['Time'] || obj['時間'] || values[2] || ''; 
-                obj['Harp (Pos)'] = obj['Harp (Pos)'] || obj['Harp'] || obj['ハーモニカ'] || values[3] || '';
-                obj['備考・演奏指示'] = obj['備考・演奏指示'] || obj['備考'] || obj['指示'] || values[4] || '';
-                obj['BPM'] = obj['BPM'] || obj['テンポ'] || values[5] || ''; 
-                
-                return obj;
-            });
-        };
+    // GoogleスプレッドシートのCSV公開URL
+    const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzWOELNEzNkvAb1Nld1Tjzv0_Z5mvRvuQdeH20jy-LYP0cycHgpWcpR6rcSBFqm-5lGKZYLgSmW4cg/pub?gid=842461559&single=true&output=csv";
 
-        const timeToSeconds = (timeStr) => {
-            if (!timeStr) return 0;
-            const parts = String(timeStr).split(':');
-            if (parts.length === 2) {
-                return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    // メインコンポーネント
+    function App() {
+      const [activeTab, setActiveTab] = useState('preview'); // 'preview' or 'songs'
+      
+      const [bandName, setBandName] = useState(BAND_CHOICES[0]);
+      const [members, setMembers] = useState(BAND_INFO[BAND_CHOICES[0]]);
+      const [hashtags, setHashtags] = useState(DEFAULT_HASHTAGS);
+      
+      const [masterSongs, setMasterSongs] = useState([]);
+      const [newSongInput, setNewSongInput] = useState("");
+      const [isLoadingSongs, setIsLoadingSongs] = useState(true);
+      const [fetchError, setFetchError] = useState("");
+      
+      const [selectedSongs, setSelectedSongs] = useState([]);
+      const [useEncore, setUseEncore] = useState(true);
+      
+      const [isCopied, setIsCopied] = useState(false);
+      const textAreaRef = useRef(null);
+      const listRef = useRef(null);
+      
+      // 連打スクロール追従用のステート
+      const [pendingScroll, setPendingScroll] = useState(null);
+
+      // 手動編集用テキストステート
+      const [editableText, setEditableText] = useState("");
+
+      // バンド変更時の処理
+      const handleBandChange = (e) => {
+        const newBand = e.target.value;
+        setBandName(newBand);
+        setMembers(BAND_INFO[newBand]); // メンバーを自動切り替え
+      };
+
+      // CSV読み込み（Googleスプレッドシート仕様に変更）
+      useEffect(() => {
+        setIsLoadingSongs(true);
+        Papa.parse(SPREADSHEET_CSV_URL, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              const songs = results.data
+                .map(row => row['楽曲名'])
+                .filter(song => song && song.trim() !== "");
+              
+              if (songs.length > 0) {
+                const uniqueSongs = Array.from(new Set(songs));
+                setMasterSongs(uniqueSongs);
+              } else {
+                setFetchError("スプレッドシートから楽曲名を取得できませんでした。「楽曲名」という列名が存在するか確認してください。");
+              }
+            } catch (err) {
+              setFetchError("データの読み込み・解析に失敗しました。");
+            } finally {
+              setIsLoadingSongs(false);
             }
-            return parseInt(timeStr, 10) || 0;
-        };
+          },
+          error: () => {
+            setFetchError("GoogleスプレッドシートのCSV取得に失敗しました。URLの有効性、またはWeb公開設定を確認してください。");
+            setIsLoadingSongs(false);
+          }
+        });
+      }, []);
 
-        const secondsToTime = (seconds) => {
-            if (isNaN(seconds) || seconds <= 0) return "0:00";
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            return `${m}:${s.toString().padStart(2, '0')}`;
-        };
+      // 手動でマスターに曲を追加
+      const handleAddSongToMaster = (e) => {
+        e.preventDefault();
+        const trimmed = newSongInput.trim();
+        if (trimmed && !masterSongs.includes(trimmed)) {
+          setMasterSongs([trimmed, ...masterSongs]);
+          setNewSongInput("");
+        }
+      };
 
-        const renderHarpCell = (harpText) => {
-            if (!harpText) return null;
-            const match = harpText.match(/^(.*?)\s*(\(.*?\))$/);
-            if (match) {
-                return (
-                    <div className="flex flex-col items-center justify-center leading-none">
-                        <span>{match[1]}</span>
-                        <span style={{ fontSize: '0.7em', marginTop: '2px' }}>{match[2]}</span>
-                    </div>
-                );
-            }
-            return <span>{harpText}</span>;
-        };
+      // 曲の選択状態を切り替え（追加・削除）
+      const toggleSongSelection = (song) => {
+        if (selectedSongs.includes(song)) {
+          setSelectedSongs(selectedSongs.filter(s => s !== song));
+        } else {
+          setSelectedSongs([...selectedSongs, song]);
+        }
+      };
 
-        const App = () => {
-            const [activeTab, setActiveTab] = useState('search');
-            const [masterData, setMasterData] = useState([]);
-            const [setlist, setSetlist] = useState([]);
-            const [mainCount, setMainCount] = useState(10);
-            const [extraCount, setExtraCount] = useState(3);
-            const [previewScale, setPreviewScale] = useState(1);
+      // 選択済みの曲を削除
+      const removeSelectedSong = (index) => {
+        const newSelected = [...selectedSongs];
+        newSelected.splice(index, 1);
+        setSelectedSongs(newSelected);
+      };
+
+      // 選択済みの曲の順番を移動（連打できるようにスクロール位置を記憶）
+      const moveSong = (index, direction) => {
+        if (direction === 'up' && index === 0) return;
+        if (direction === 'down' && index === selectedSongs.length - 1) return;
+
+        const container = listRef.current;
+        if (!container) return;
+
+        // 移動前の要素の画面上のY座標を取得
+        const itemElement = container.children[index];
+        const prevY = itemElement.getBoundingClientRect().top;
+
+        const newSelected = [...selectedSongs];
+        let newIndex = index;
+        if (direction === 'up') {
+          [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
+          newIndex = index - 1;
+        } else {
+          [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
+          newIndex = index + 1;
+        }
+
+        // 次の描画でスクロール位置を調整するためのデータをセット
+        setPendingScroll({ newIndex, prevY });
+        setSelectedSongs(newSelected);
+      };
+
+      // DOM更新後にスクロール位置を調整する（連打追従機能）
+      useLayoutEffect(() => {
+        if (pendingScroll && listRef.current) {
+          const { newIndex, prevY } = pendingScroll;
+          const newItemElement = listRef.current.children[newIndex];
+          if (newItemElement) {
+            // 移動後の要素の画面上のY座標を取得
+            const currentY = newItemElement.getBoundingClientRect().top;
+            // 差分だけ親コンテナをスクロールさせて、要素が画面上で動かないようにする
+            const diff = currentY - prevY;
+            listRef.current.scrollTop += diff;
+          }
+          setPendingScroll(null);
+        }
+      }, [selectedSongs, pendingScroll]);
+
+      // YouTube用テキスト生成
+      const generatedText = useMemo(() => {
+        const lines = [];
+        lines.push("");
+        lines.push(`🎵 【 ${bandName.toUpperCase()} 】 🎵`);
+        lines.push("LIVE PERFORMANCE");
+        lines.push("");
+        lines.push("■ Members");
+        lines.push(members);
+        lines.push("");
+        lines.push("■ Timestamps (Chapters)");
+        lines.push("00:00 Intro / Greeting (準備・挨拶)");
+        
+        selectedSongs.forEach((song, index) => {
+          let displayName = song;
+          if (useEncore && index === selectedSongs.length - 1) {
+            displayName = `${song}（アンコール曲）`;
+          }
+          lines.push(`00:00 ${displayName}`);
+        });
+        
+        lines.push("");
+        lines.push("■ Hashtags");
+        lines.push(hashtags);
+        
+        return lines.join("\n");
+      }, [bandName, members, hashtags, selectedSongs, useEncore]);
+
+      // 生成テキストが変更されたら編集用テキストを上書き
+      useEffect(() => {
+        setEditableText(generatedText);
+      }, [generatedText]);
+
+      // コピー処理
+      const handleCopy = () => {
+        if (textAreaRef.current) {
+          textAreaRef.current.select();
+          try {
+            document.execCommand('copy');
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+          } catch (err) {
+            console.error('Failed to copy', err);
+          }
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-50 text-slate-800 p-2 sm:p-4 md:p-8 font-sans pb-20">
+          <div className="max-w-6xl mx-auto">
             
-            const [editingNoteIndex, setEditingNoteIndex] = useState(null);
-            const [tempNoteText, setTempNoteText] = useState("");
+            <header className="mb-6 border-b border-slate-200 pb-4 px-2 sm:px-0">
+              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3 text-slate-900">
+                <span className="text-3xl sm:text-4xl">📺</span> YouTube概要欄作成
+              </h1>
+            </header>
 
-            const [scrollPos, setScrollPos] = useState({ isTop: true, isBottom: false });
-            const scrollContainerRef = useRef(null);
-
-            const dragItem = useRef(null);
-            const dragOverItem = useRef(null);
-            const previewWrapperRef = useRef(null);
-
-            const handleScroll = (e) => {
-                const { scrollTop, scrollHeight, clientHeight } = e.target;
-                setScrollPos({
-                    isTop: scrollTop <= 5,
-                    isBottom: Math.ceil(scrollTop + clientHeight) >= scrollHeight - 5
-                });
-            };
-
-            useEffect(() => {
-                if (activeTab === 'search' && scrollContainerRef.current) {
-                    handleScroll({ target: scrollContainerRef.current });
-                }
-            }, [activeTab, masterData, setlist]);
-
-            useEffect(() => {
-                const updateScale = () => {
-                    if (activeTab === 'preview' && previewWrapperRef.current) {
-                        const wrapperWidth = previewWrapperRef.current.clientWidth;
-                        const a4WidthPx = 794; 
-                        if (wrapperWidth < a4WidthPx) {
-                            setPreviewScale(wrapperWidth / a4WidthPx);
-                        } else {
-                            setPreviewScale(1);
-                        }
-                    }
-                };
-                
-                setTimeout(updateScale, 10);
-                window.addEventListener('resize', updateScale);
-                return () => window.removeEventListener('resize', updateScale);
-            }, [activeTab]);
-
-            useEffect(() => {
-                const timestamp = new Date().getTime();
-                fetch(`master_data.csv?t=${timestamp}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error('CSVが見つかりません');
-                        return response.text();
-                    })
-                    .then(text => {
-                        const data = parseCSV(text);
-                        setMasterData(data.length > 0 ? data : FALLBACK_DATA);
-                    })
-                    .catch(() => {
-                        setMasterData(FALLBACK_DATA);
-                    });
-            }, []);
-
-            const toggleSong = (song) => {
-                const isSelected = setlist.some(s => s.id === song.id);
-                if (isSelected) {
-                    setSetlist(setlist.filter(s => s.id !== song.id));
-                } else {
-                    setSetlist([...setlist, { ...song, uniqueId: Date.now() + Math.random() }]);
-                }
-            };
-
-            const updateSetlistField = (index, field, value) => {
-                const newList = [...setlist];
-                newList[index][field] = value;
-                setSetlist(newList);
-            };
-
-            const moveRow = (index, direction) => {
-                if (direction === -1 && index === 0) return;
-                if (direction === 1 && index === setlist.length - 1) return;
-                
-                const itemUniqueId = setlist[index].uniqueId;
-                const itemEl = document.getElementById(`song-row-${itemUniqueId}`);
-                let prevTop = 0;
-                if (itemEl) prevTop = itemEl.getBoundingClientRect().top;
-
-                const newList = [...setlist];
-                const item = newList.splice(index, 1)[0];
-                newList.splice(index + direction, 0, item);
-                setSetlist(newList);
-
-                if (itemEl) {
-                    requestAnimationFrame(() => {
-                        const newItemEl = document.getElementById(`song-row-${itemUniqueId}`);
-                        if (newItemEl) {
-                            const newTop = newItemEl.getBoundingClientRect().top;
-                            const diff = newTop - prevTop;
-                            window.scrollBy(0, diff);
-                        }
-                    });
-                }
-            };
-
-            const handleSort = () => {
-                if (dragItem.current === null || dragOverItem.current === null) return;
-                const newList = [...setlist];
-                const draggedItem = newList.splice(dragItem.current, 1)[0];
-                newList.splice(dragOverItem.current, 0, draggedItem);
-                dragItem.current = null;
-                dragOverItem.current = null;
-                setSetlist(newList);
-            };
-
-            const saveNote = () => {
-                if (editingNoteIndex !== null) {
-                    updateSetlistField(editingNoteIndex, '備考・演奏指示', tempNoteText);
-                }
-                setEditingNoteIndex(null);
-            };
-
-            const calculateTotalTime = () => {
-                const mainSongs = setlist.slice(0, mainCount);
-                const totalSeconds = mainSongs.reduce((acc, song) => acc + timeToSeconds(song.Time || song.時間), 0);
-                return secondsToTime(totalSeconds);
-            };
-
-            const calculateAllSelectedTime = () => {
-                const totalSeconds = setlist.reduce((acc, song) => acc + timeToSeconds(song.Time || song.時間), 0);
-                return secondsToTime(totalSeconds);
-            };
-
-            const totalPrintCount = mainCount + extraCount;
-            const isMultiPage = totalPrintCount >= 16;
-
-            const handlePrint = () => {
-                if (isMultiPage) {
-                    alert("16曲以上は2枚になります。");
-                }
-                window.print();
-            };
-
-            const renderCountSettings = () => (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 md:p-4 mb-3 flex flex-col md:flex-row items-center justify-between gap-2">
-                    <div className="font-bold text-gray-700 flex items-center text-sm md:text-base">
-                        <i className="fas fa-music mr-2 text-red-600"></i>
-                        現在 {setlist.length} 曲選択中
-                        {setlist.length > 0 && (
-                            <span className="ml-2 px-2 py-0.5 bg-red-50 border border-red-200 text-red-600 rounded-md text-xs md:text-sm shadow-sm">
-                                計 {calculateAllSelectedTime()}
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex space-x-3 md:space-x-4">
-                        <div className="flex items-center">
-                            <label className="text-xs md:text-sm font-bold text-gray-600 mr-1 md:mr-2">本番枠:</label>
-                            <div className="flex items-center border border-gray-300 rounded overflow-hidden shadow-sm bg-white">
-                                <button onClick={() => setMainCount(Math.max(1, mainCount - 1))} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 border-r"><i className="fas fa-minus text-[10px] md:text-xs"></i></button>
-                                <div className="w-6 md:w-8 text-center font-bold text-sm md:text-base text-red-600">{mainCount}</div>
-                                <button onClick={() => setMainCount(Math.min(30, mainCount + 1))} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 border-l"><i className="fas fa-plus text-[10px] md:text-xs"></i></button>
-                            </div>
-                        </div>
-                        <div className="flex items-center">
-                            <label className="text-xs md:text-sm font-bold text-gray-600 mr-1 md:mr-2">予備枠:</label>
-                            <div className="flex items-center border border-gray-300 rounded overflow-hidden shadow-sm bg-white">
-                                <button onClick={() => setExtraCount(Math.max(0, extraCount - 1))} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 border-r"><i className="fas fa-minus text-[10px] md:text-xs"></i></button>
-                                <div className="w-6 md:w-8 text-center font-bold text-sm md:text-base text-gray-600">{extraCount}</div>
-                                <button onClick={() => setExtraCount(Math.min(10, extraCount + 1))} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 border-l"><i className="fas fa-plus text-[10px] md:text-xs"></i></button>
-                            </div>
-                        </div>
-                    </div>
+            {/* タブナビゲーション */}
+            <div className="flex border-b border-slate-200 mb-6 bg-white rounded-t-lg overflow-hidden shadow-sm mx-1 sm:mx-0">
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={`flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 ${activeTab === 'preview' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              >
+                📝 作成・プレビュー
+              </button>
+              <button
+                onClick={() => setActiveTab('songs')}
+                className={`flex-1 py-3 sm:py-4 font-medium text-xs sm:text-sm transition-colors border-b-2 ${activeTab === 'songs' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  🎵 曲リスト
+                  {selectedSongs.length > 0 && (
+                    <span className="bg-blue-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-full">{selectedSongs.length}</span>
+                  )}
                 </div>
-            );
+              </button>
+            </div>
 
-            const renderSearchTab = () => (
-                <div className="animate-fade-in print-hidden relative">
-                    {renderCountSettings()}
-                    
-                    <div className="fixed right-3 md:right-5 top-[40%] transform -translate-y-1/2 flex flex-col gap-3 z-50">
-                        {!scrollPos.isTop && (
-                            <button 
-                                onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} 
-                                className="bg-gray-800 bg-opacity-70 hover:bg-opacity-100 text-white p-2.5 rounded-xl shadow-2xl flex flex-col items-center transition-all border border-gray-600 backdrop-blur-sm"
-                            >
-                                <i className="fas fa-chevron-up text-xl mb-1"></i>
-                                <span className="text-[10px] font-bold leading-tight">一番上へ</span>
-                                <span className="text-[11px] font-black text-red-300 leading-tight mt-1 whitespace-nowrap">
-                                    計 {calculateAllSelectedTime()}
-                                </span>
-                            </button>
-                        )}
-                        
-                        {!scrollPos.isBottom && (
-                            <button 
-                                onClick={() => scrollContainerRef.current?.scrollTo({ top: scrollContainerRef.current.scrollHeight, behavior: 'smooth' })} 
-                                className="bg-gray-800 bg-opacity-70 hover:bg-opacity-100 text-white p-2.5 rounded-xl shadow-2xl flex flex-col items-center transition-all border border-gray-600 backdrop-blur-sm"
-                            >
-                                <span className="text-[10px] font-bold leading-tight mb-1">一番下へ</span>
-                                <i className="fas fa-chevron-down text-xl"></i>
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="bg-red-50 px-3 py-2 border-b border-red-100 flex justify-between items-center">
-                            <h2 className="text-xs md:text-sm font-bold text-red-800">マスターデータから選ぶ</h2>
-                            <span className="text-[10px] md:text-xs text-red-600">※タップして追加/削除</span>
-                        </div>
-                        
-                        <div 
-                            className="overflow-y-auto" 
-                            style={{ maxHeight: '65vh' }}
-                            ref={scrollContainerRef}
-                            onScroll={handleScroll}
+            {/* --- タブ: 作成・プレビュー --- */}
+            {activeTab === 'preview' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                
+                {/* 左側: バンド設定 & セットリスト */}
+                <div className="space-y-4 sm:space-y-6">
+                  {/* バンド設定 */}
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
+                    <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2">📋 Band Info</h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">バンド名</label>
+                        <select 
+                          value={bandName}
+                          onChange={handleBandChange}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
                         >
-                            <ul className="divide-y divide-gray-100">
-                                {masterData.map((song) => {
-                                    const isSelected = setlist.some(s => s.id === song.id);
-                                    return (
-                                        <li key={song.id} 
-                                            onClick={() => toggleSong(song)}
-                                            className={`px-3 py-1.5 md:p-3 flex items-center justify-start cursor-pointer transition-colors ${isSelected ? 'bg-red-50' : 'hover:bg-gray-50'}`}
-                                        >
-                                            <div className="mr-2 md:mr-3 flex-shrink-0 w-16 md:w-20">
-                                                {isSelected ? (
-                                                    <button className="w-full px-1 py-1 md:px-2 bg-gray-200 text-gray-600 font-bold rounded text-xs flex justify-center items-center shadow-inner">
-                                                        <i className="fas fa-check mr-1"></i> 削除
-                                                    </button>
-                                                ) : (
-                                                    <button className="w-full px-1 py-1 md:px-2 bg-red-600 text-white font-bold rounded text-xs flex justify-center items-center shadow shadow-red-200 active:bg-red-700">
-                                                        <i className="fas fa-plus mr-1"></i> 追加
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 text-left">
-                                                <div className={`font-bold text-sm md:text-base truncate ${isSelected ? 'text-red-700' : 'text-gray-800'}`}>
-                                                    {song.楽曲名 || song.曲名}
-                                                </div>
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
+                          {BAND_CHOICES.map(band => <option key={band} value={band}>{band}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">メンバー</label>
+                        <textarea 
+                          value={members}
+                          onChange={(e) => setMembers(e.target.value)}
+                          rows={6}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">ハッシュタグ</label>
+                        <input 
+                          type="text" 
+                          value={hashtags}
+                          onChange={(e) => setHashtags(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
+                      </div>
                     </div>
-                </div>
-            );
+                  </div>
 
-            const renderEditTab = () => (
-                <div className="animate-fade-in print-hidden">
-                    {renderCountSettings()}
-
-                    {setlist.length === 0 ? (
-                        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                            <i className="fas fa-list-ul text-3xl text-gray-300 mb-3"></i>
-                            <p className="text-gray-500 font-medium text-sm">まだ曲が選ばれていません。<br/>「1. 曲を選ぶ」タブから追加してください。</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-1">
-                            {setlist.map((song, index) => {
-                                const isExtra = index >= mainCount;
-                                return (
-                                    <React.Fragment key={song.uniqueId}>
-                                        {index === mainCount && (
-                                            <div className="w-full flex justify-center py-1.5 print-hidden">
-                                                <span className="bg-gray-800 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md">🛑 ここから予備曲</span>
-                                            </div>
-                                        )}
-
-                                        <div 
-                                            id={`song-row-${song.uniqueId}`}
-                                            draggable
-                                            onDragStart={() => (dragItem.current = index)}
-                                            onDragEnter={() => (dragOverItem.current = index)}
-                                            onDragEnd={handleSort}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            className={`bg-white border rounded shadow-sm overflow-hidden flex flex-col transition-all ${isExtra ? 'border-gray-200 bg-gray-50 opacity-80' : 'border-red-100'}`}
-                                        >
-                                            <div className="p-0.5 md:p-2 flex flex-col md:flex-row gap-0 md:gap-2 items-start md:items-end">
-                                                <div className="flex items-center w-full md:w-auto md:flex-1 py-0.5 md:py-0">
-                                                    <div className="hidden md:flex text-gray-300 p-1 cursor-grab mr-1">
-                                                        <i className="fas fa-grip-vertical text-lg"></i>
-                                                    </div>
-
-                                                    <div className="md:hidden flex flex-col space-y-0 mr-1">
-                                                        <button onClick={() => moveRow(index, -1)} disabled={index === 0} className={`px-1.5 py-0 rounded bg-gray-100 text-gray-600 ${index === 0 ? 'opacity-30' : 'active:bg-gray-200'}`}><i className="fas fa-arrow-up text-[8px]"></i></button>
-                                                        <button onClick={() => moveRow(index, 1)} disabled={index === setlist.length - 1} className={`px-1.5 py-0 rounded bg-gray-100 text-gray-600 ${index === setlist.length - 1 ? 'opacity-30' : 'active:bg-gray-200'}`}><i className="fas fa-arrow-down text-[8px]"></i></button>
-                                                    </div>
-
-                                                    <div className="w-5 flex-shrink-0 text-center font-black text-xs md:text-base text-gray-400 mr-1">
-                                                        {isExtra ? '予' : index + 1}
-                                                    </div>
-                                                    
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSetlist(setlist.filter((_, i) => i !== index));
-                                                        }}
-                                                        className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 active:bg-red-200 transition-colors mr-1 md:mr-2"
-                                                    >
-                                                        <i className="fas fa-trash-alt text-[10px] md:text-xs"></i>
-                                                    </button>
-                                                    
-                                                    <div className="flex-1 font-bold text-sm md:text-base text-gray-800 leading-none pr-1 truncate text-left">
-                                                        {song.楽曲名 || song.曲名}
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-[15fr_56fr_12fr_17fr] md:flex items-end gap-0.5 w-full md:w-auto px-1 md:px-0 mb-0.5 md:mb-0">
-                                                    <div className="md:w-10">
-                                                        <label className="block text-[8px] md:text-[9px] font-bold text-gray-500 mb-0 md:mb-0.5 text-center leading-none">Key</label>
-                                                        <input type="text" value={song.Key || ''} onChange={(e) => updateSetlistField(index, 'Key', e.target.value)} className="w-full px-0.5 py-0 md:py-1 border rounded bg-white text-[9px] md:text-xs font-bold text-center focus:ring-2 focus:ring-red-200 outline-none h-4 md:h-auto leading-none" />
-                                                    </div>
-                                                    <div className="md:w-16">
-                                                        <label className="block text-[8px] md:text-[9px] font-bold text-gray-500 mb-0 md:mb-0.5 text-center leading-none">Harp</label>
-                                                        <input type="text" value={song["Harp (Pos)"] || song.Harp || ''} onChange={(e) => updateSetlistField(index, 'Harp (Pos)', e.target.value)} className="w-full px-0.5 py-0 md:py-1 border rounded bg-white text-[9px] md:text-xs font-bold text-center focus:ring-2 focus:ring-red-200 outline-none h-4 md:h-auto leading-none" />
-                                                    </div>
-                                                    <div className="md:w-12">
-                                                        <label className="block text-[8px] md:text-[9px] font-bold text-gray-500 mb-0 md:mb-0.5 text-center leading-none">BPM</label>
-                                                        <input type="text" value={song.BPM || ''} onChange={(e) => updateSetlistField(index, 'BPM', e.target.value)} className="w-full px-0.5 py-0 md:py-1 border rounded bg-white text-[9px] md:text-xs font-bold text-center focus:ring-2 focus:ring-red-200 outline-none h-4 md:h-auto leading-none" />
-                                                    </div>
-                                                    <div className="md:w-14">
-                                                        <label className="block text-[8px] md:text-[9px] font-bold text-gray-500 mb-0 md:mb-0.5 text-center leading-none">Time</label>
-                                                        <input type="text" value={song.Time || song.時間 || ''} onChange={(e) => updateSetlistField(index, 'Time', e.target.value)} className="w-full px-0.5 py-0 md:py-1 border rounded bg-white text-[9px] md:text-xs font-bold text-center focus:ring-2 focus:ring-red-200 outline-none h-4 md:h-auto leading-none" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="px-2 py-1 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
-                                                {editingNoteIndex === index ? (
-                                                    <div className="flex-1 flex gap-1 items-center">
-                                                        <input type="text" value={tempNoteText} onChange={(e) => setTempNoteText(e.target.value)} className="flex-1 px-2 py-0.5 text-xs border rounded bg-white" placeholder="備考・演奏指示を入力..." />
-                                                        <button onClick={saveNote} className="px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded shadow-sm"><i className="fas fa-check"></i></button>
-                                                        <button onClick={() => setEditingNoteIndex(null)} className="px-2 py-0.5 bg-gray-400 text-white text-xs font-bold rounded shadow-sm"><i className="fas fa-times"></i></button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex-1 text-xs text-gray-600 truncate cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors" onClick={() => { setTempNoteText(song['備考・演奏指示'] || ''); setEditingNoteIndex(index); }}>
-                                                        <i className="fas fa-pencil-alt text-gray-400 mr-2"></i>
-                                                        {song['備考・演奏指示'] || <span className="text-gray-300 italic">備考を追加...</span>}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </React.Fragment>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            );
-
-            const renderPreviewTab = () => (
-                <div className="animate-fade-in w-full flex justify-center bg-gray-200 py-4 md:py-8 overflow-x-auto min-h-screen print:bg-white print:p-0">
-                    <div ref={previewWrapperRef} className="bg-white shadow-2xl origin-top print:shadow-none" style={{ width: '210mm', minHeight: '297mm', transform: `scale(${previewScale})`, marginBottom: '20px' }}>
-                        <div id="print-container">
-                            <div className="print-header text-center flex flex-col items-center justify-center border-b-4 border-black pb-2 mb-2">
-                                <h1 className="text-4xl font-black tracking-widest font-serif mt-4">SET LIST</h1>
-                                <div className="text-xl font-bold mt-1">Drop Down Mama</div>
-                                <div className="text-lg font-bold text-gray-600 mt-1">Total Time: {calculateTotalTime()}</div>
-                            </div>
-                            
-                            <div className="print-table-container">
-                                <div className="print-grid-header">
-                                    <div>No.</div>
-                                    <div>Title</div>
-                                    <div>Key</div>
-                                    <div>Harp</div>
-                                    <div>BPM</div>
-                                    <div>Time</div>
-                                </div>
-                                
-                                {setlist.slice(0, mainCount).map((song, i) => (
-                                    <div key={song.uniqueId} className="print-grid-row">
-                                        <div className="pg-no">{i + 1}</div>
-                                        <div className="pg-title">
-                                            <span className="print-song-title">{song.楽曲名 || song.曲名}</span>
-                                        </div>
-                                        <div className="pg-key">{song.Key}</div>
-                                        <div className="pg-harp">{renderHarpCell(song["Harp (Pos)"] || song.Harp)}</div>
-                                        <div className="pg-bpm">{song.BPM}</div>
-                                        <div className="pg-time">{song.Time || song.時間}</div>
-                                        <div className="pg-memo">{song['備考・演奏指示']}</div>
-                                    </div>
-                                ))}
-
-                                {setlist.length > mainCount && extraCount > 0 && (
-                                    <React.Fragment>
-                                        <div className="bg-gray-300 text-center font-bold py-1 border-b border-black print-extra flex items-center justify-center" style={{ fontSize: '1.2rem', borderTop: '2px solid black' }}>
-                                            --- EXTRAS / ENCORE ---
-                                        </div>
-                                        {setlist.slice(mainCount, mainCount + extraCount).map((song, i) => (
-                                            <div key={song.uniqueId} className="print-grid-row print-extra">
-                                                <div className="pg-no" style={{ fontSize: '1rem' }}>Ex{i + 1}</div>
-                                                <div className="pg-title">
-                                                    <span className="print-song-title" style={{ fontSize: '1.4rem' }}>{song.楽曲名 || song.曲名}</span>
-                                                </div>
-                                                <div className="pg-key">{song.Key}</div>
-                                                <div className="pg-harp">{renderHarpCell(song["Harp (Pos)"] || song.Harp)}</div>
-                                                <div className="pg-bpm">{song.BPM}</div>
-                                                <div className="pg-time">{song.Time || song.時間}</div>
-                                                <div className="pg-memo">{song['備考・演奏指示']}</div>
-                                            </div>
-                                        ))}
-                                    </React.Fragment>
-                                )}
-                            </div>
-                        </div>
+                  {/* 選択済みセットリスト */}
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sm:p-6 mx-1 sm:mx-0">
+                    <div className="flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 px-1 sm:px-0">
+                      <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">🎸 セットリスト ({selectedSongs.length}曲)</h2>
+                      <button onClick={() => setActiveTab('songs')} className="text-xs sm:text-sm text-blue-600 hover:underline">曲を追加する</button>
                     </div>
-                    
-                    {/* Floating Print Button for Preview Tab */}
-                    <button onClick={handlePrint} className="print-hidden fixed bottom-6 right-6 bg-[#1A2B3C] hover:bg-[#2A4B6C] border-2 border-[#D8C38E] text-[#D8C38E] rounded-full w-14 h-14 shadow-2xl flex items-center justify-center text-xl transition-transform hover:scale-110 z-50">
-                        <i className="fas fa-print"></i>
+
+                    <div 
+                      ref={listRef}
+                      className="space-y-1.5 sm:space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-1 sm:p-4 rounded-lg border border-slate-200 scroll-smooth"
+                    >
+                      {selectedSongs.length === 0 ? (
+                        <div className="text-center text-slate-400 py-8 flex flex-col items-center">
+                          <span className="text-4xl mb-2">📄</span>
+                          <p className="text-sm">曲が選択されていません。<br/>「曲リスト」タブから追加してください。</p>
+                        </div>
+                      ) : (
+                        selectedSongs.map((song, index) => (
+                          <div key={index} className="flex items-center justify-between bg-white p-1.5 sm:p-3 rounded shadow-sm border border-slate-200 group gap-0.5 sm:gap-2">
+                            <div className="flex items-center gap-1 sm:gap-3 overflow-hidden flex-1 min-w-0">
+                              <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30 flex-shrink-0"><ArrowUpIcon /></button>
+                              <span className="bg-blue-100 text-blue-800 font-mono text-[9px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full min-w-[1.2rem] sm:min-w-[2rem] text-center flex-shrink-0">{index + 1}</span>
+                              <span className="text-[11px] sm:text-base font-medium truncate flex-1 leading-tight">{song}</span>
+                            </div>
+                            <div className="flex items-center gap-0 sm:gap-1 opacity-100 transition-opacity flex-shrink-0">
+                              <button onClick={() => moveSong(index, 'down')} disabled={index === selectedSongs.length - 1} className="p-1 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowDownIcon /></button>
+                              <button onClick={() => removeSelectedSong(index)} className="p-1 sm:p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-0.5 sm:ml-2"><TrashIcon /></button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="px-1 sm:px-0">
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" id="encore-check" checked={useEncore} onChange={(e) => setUseEncore(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                        />
+                        <label htmlFor="encore-check" className="text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？</label>
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-slate-500 mt-1 ml-6">※曲名の後ろに（アンコール曲）を付与</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 右側: 出力 */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full min-h-[400px] sm:min-h-[600px] mx-1 sm:mx-0">
+                  <div className="bg-slate-800 text-white px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+                    <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">📝 YouTubeコピペ用出力</h2>
+                    <button 
+                      onClick={handleCopy}
+                      className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all font-medium text-xs sm:text-sm ${isCopied ? "bg-green-500 hover:bg-green-600" : "bg-blue-600 hover:bg-blue-700"}`}
+                    >
+                      {isCopied ? <CheckIcon /> : <CopyIcon />} {isCopied ? "コピー完了" : "コピーする"}
                     </button>
+                  </div>
+                  <div className="p-4 sm:p-6 flex-1 flex flex-col">
+                    <textarea 
+                      ref={textAreaRef}
+                      value={editableText}
+                      onChange={(e) => setEditableText(e.target.value)}
+                      className="w-full flex-1 p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-2 text-right">※自由に編集できます（左側の設定を変更するとリセットされます）</p>
+                  </div>
                 </div>
-            );
 
-            return (
-                <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
-                    <header className="bg-[#1A2B3C] text-white shadow-md z-10 print-hidden sticky top-0">
-                        <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-                            <h1 className="text-xl md:text-2xl font-black tracking-wider flex items-center text-[#D8C38E]">
-                                <i className="fas fa-music mr-2 md:mr-3"></i>
-                                DDM Setlist Builder
-                            </h1>
-                            <div className="text-xs md:text-sm font-bold bg-gray-800 px-2 md:px-3 py-1 rounded text-[#D8C38E] border border-gray-700">
-                                Total: {calculateTotalTime()}
-                            </div>
-                        </div>
-                        
-                        <div className="flex w-full max-w-4xl mx-auto">
-                            <button onClick={() => setActiveTab('search')} className={`flex-1 py-3 text-sm md:text-base font-bold transition-colors border-b-4 ${activeTab === 'search' ? 'border-[#D8C38E] text-[#D8C38E] bg-gray-800' : 'border-transparent text-gray-400 hover:bg-gray-800'}`}>
-                                <i className="fas fa-search mb-1 md:mb-0 md:mr-2 block md:inline"></i>1. 探す
-                            </button>
-                            <button onClick={() => setActiveTab('edit')} className={`flex-1 py-3 text-sm md:text-base font-bold transition-colors border-b-4 ${activeTab === 'edit' ? 'border-[#D8C38E] text-[#D8C38E] bg-gray-800' : 'border-transparent text-gray-400 hover:bg-gray-800'}`}>
-                                <i className="fas fa-list mb-1 md:mb-0 md:mr-2 block md:inline"></i>2. 編集 <span className="ml-1 bg-[#D8C38E] text-gray-900 font-black text-[10px] md:text-xs px-1.5 py-0.5 rounded-full">{setlist.length}</span>
-                            </button>
-                            <button onClick={() => setActiveTab('preview')} className={`flex-1 py-3 text-sm md:text-base font-bold transition-colors border-b-4 ${activeTab === 'preview' ? 'border-[#D8C38E] text-[#D8C38E] bg-gray-800' : 'border-transparent text-gray-400 hover:bg-gray-800'}`}>
-                                <i className="fas fa-print mb-1 md:mb-0 md:mr-2 block md:inline"></i>3. 印刷
-                            </button>
-                        </div>
-                    </header>
+              </div>
+            )}
 
-                    <main className="flex-1 w-full max-w-4xl mx-auto p-2 md:p-4 pb-24 md:pb-6 print:p-0 print:max-w-none print:m-0">
-                        {activeTab === 'search' && renderSearchTab()}
-                        {activeTab === 'edit' && renderEditTab()}
-                        {activeTab === 'preview' && renderPreviewTab()}
-                    </main>
+            {/* --- タブ: 曲リスト --- */}
+            {activeTab === 'songs' && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 sm:mb-6 border-b pb-4 gap-2 sm:gap-0">
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">🎵 楽曲マスターリスト</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">追加ボタンを押すとセットリストに入ります。</p>
+                  </div>
+                  {isLoadingSongs && (
+                    <span className="text-[10px] sm:text-xs font-normal text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-2">
+                      <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full"></span> スプレッドシート読込中...
+                    </span>
+                  )}
                 </div>
-            );
-        };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+                {fetchError && (
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 text-red-700 text-xs sm:text-sm rounded-md border border-red-200">{fetchError}</div>
+                )}
+
+                {/* 手動追加フォーム */}
+                <form onSubmit={handleAddSongToMaster} className="flex gap-2 mb-6 sm:mb-8 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
+                  <input 
+                    type="text" placeholder="スプレッドシートにない新しい曲名を追加..." value={newSongInput} onChange={(e) => setNewSongInput(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                  />
+                  <button type="submit" disabled={!newSongInput.trim()} className="bg-slate-800 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm font-medium whitespace-nowrap">
+                    <PlusIcon /> <span className="hidden sm:inline">マスターに追加</span><span className="sm:hidden">追加</span>
+                  </button>
+                </form>
+
+                {/* リスト表示 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                  {masterSongs.map((song, idx) => {
+                    const isSelected = selectedSongs.includes(song);
+                    return (
+                      <div key={idx} onClick={() => toggleSongSelection(song)} className={`flex items-center p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors gap-2 sm:gap-3 ${isSelected ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                        <button 
+                          className={`flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold transition-all ${isSelected ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600'}`}
+                        >
+                          {isSelected ? '削除' : '追加'}
+                        </button>
+                        <span className={`font-medium text-xs sm:text-sm truncate ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>{song}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {masterSongs.length === 0 && !isLoadingSongs && !fetchError && (
+                   <p className="text-center py-8 text-sm text-slate-500">曲データがありません。</p>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
 </body>
 </html>
