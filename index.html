@@ -5,20 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube概要欄作成システム</title>
   
-  <!-- ファビコン: ブルースっぽくギターの絵文字を設定 -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%%22 y=%2250%%22 style=%22dominant-baseline:central;text-anchor:middle;font-size:90px;%22>🎸</text></svg>">
   
-  <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   
-  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- PapaParse (CSV読み込み用) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -43,10 +38,8 @@
     const BAND_CHOICES = Object.keys(BAND_INFO);
     const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #PostWarBlues #BluesMusic";
 
-    // メインコンポーネント
     function App() {
-      const [activeTab, setActiveTab] = useState('preview'); // 'preview' or 'songs'
-      
+      const [activeTab, setActiveTab] = useState('preview');
       const [bandName, setBandName] = useState(BAND_CHOICES[0]);
       const [members, setMembers] = useState(BAND_INFO[BAND_CHOICES[0]]);
       const [hashtags, setHashtags] = useState(DEFAULT_HASHTAGS);
@@ -58,57 +51,66 @@
       
       const [selectedSongs, setSelectedSongs] = useState([]);
       const [useEncore, setUseEncore] = useState(true);
-      
       const [isCopied, setIsCopied] = useState(false);
-      const textAreaRef = useRef(null);
-      const listRef = useRef(null);
       
-      // 連打スクロール追従用のステート
+      const listRef = useRef(null);
       const [pendingScroll, setPendingScroll] = useState(null);
-
-      // 手動編集用テキストステート
       const [editableText, setEditableText] = useState("");
 
-      // バンド変更時の処理
       const handleBandChange = (e) => {
         const newBand = e.target.value;
         setBandName(newBand);
-        setMembers(BAND_INFO[newBand]); // メンバーを自動切り替え
+        setMembers(BAND_INFO[newBand]);
       };
 
-      // CSV読み込み
+      // CSV読み込み（file:// スキーム対策付き）
       useEffect(() => {
         setIsLoadingSongs(true);
-        Papa.parse('master_data.csv', {
+        
+        // ブラウザがローカルファイル制限に引っかかっているかチェック
+        if (window.location.protocol === 'file:') {
+          setFetchError("ローカルファイル(file://)として開かれているため、セキュリティー制限により master_data.csv を自動読み込みできません。下のフォームから曲を追加するか、ローカルサーバー（Live Server等）を起動してください。");
+          setIsLoadingSongs(false);
+          return;
+        }
+
+        if (typeof Papa === 'undefined') {
+          setFetchError("PapaParse ライブラリの読み込みに失敗しました。ネット接続を確認してください。");
+          setIsLoadingSongs(false);
+          return;
+        }
+
+         Papa.parse('master_data.csv', {
           download: true,
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
             try {
-              const songs = results.data
-                .map(row => row['楽曲名'])
-                .filter(song => song && song.trim() !== "");
-              
-              if (songs.length > 0) {
-                const uniqueSongs = Array.from(new Set(songs));
-                setMasterSongs(uniqueSongs);
-              } else {
-                setFetchError("CSVから楽曲名を取得できませんでした。「楽曲名」という列名が存在するか確認してください。");
+              if (results && results.data) {
+                const songs = results.data
+                  .map(row => row['楽曲名'])
+                  .filter(song => song && song.trim() !== "");
+                
+                if (songs.length > 0) {
+                  const uniqueSongs = Array.from(new Set(songs));
+                  setMasterSongs(uniqueSongs);
+                } else {
+                  setFetchError("CSVから楽曲名を取得できませんでした。「楽曲名」という列名が存在するか確認してください。");
+                }
               }
             } catch (err) {
-              setFetchError("データの読み込みに失敗しました。");
+              setFetchError("データのパースに失敗しました。");
             } finally {
               setIsLoadingSongs(false);
             }
           },
           error: () => {
-            setFetchError("master_data.csv の読み込みに失敗しました。（※GitHub Pages等で公開後に正常に動作します）");
+            setFetchError("master_data.csv の読み込みに失敗しました。ファイルがHTMLと同じフォルダにあるか確認してください。");
             setIsLoadingSongs(false);
           }
         });
       }, []);
 
-      // 手動でマスターに曲を追加
       const handleAddSongToMaster = (e) => {
         e.preventDefault();
         const trimmed = newSongInput.trim();
@@ -118,7 +120,6 @@
         }
       };
 
-      // 曲の選択状態を切り替え（追加・削除）
       const toggleSongSelection = (song) => {
         if (selectedSongs.includes(song)) {
           setSelectedSongs(selectedSongs.filter(s => s !== song));
@@ -127,14 +128,12 @@
         }
       };
 
-      // 選択済みの曲を削除
       const removeSelectedSong = (index) => {
         const newSelected = [...selectedSongs];
         newSelected.splice(index, 1);
         setSelectedSongs(newSelected);
       };
 
-      // 選択済みの曲の順番を移動（連打できるようにスクロール位置を記憶）
       const moveSong = (index, direction) => {
         if (direction === 'up' && index === 0) return;
         if (direction === 'down' && index === selectedSongs.length - 1) return;
@@ -142,9 +141,8 @@
         const container = listRef.current;
         if (!container) return;
 
-        // 移動前の要素の画面上のY座標を取得
         const itemElement = container.children[index];
-        const prevY = itemElement.getBoundingClientRect().top;
+        const prevY = itemElement ? itemElement.getBoundingClientRect().top : 0;
 
         const newSelected = [...selectedSongs];
         let newIndex = index;
@@ -156,20 +154,16 @@
           newIndex = index + 1;
         }
 
-        // 次の描画でスクロール位置を調整するためのデータをセット
         setPendingScroll({ newIndex, prevY });
         setSelectedSongs(newSelected);
       };
 
-      // DOM更新後にスクロール位置を調整する（連打追従機能）
       useLayoutEffect(() => {
         if (pendingScroll && listRef.current) {
           const { newIndex, prevY } = pendingScroll;
           const newItemElement = listRef.current.children[newIndex];
           if (newItemElement) {
-            // 移動後の要素の画面上のY座標を取得
             const currentY = newItemElement.getBoundingClientRect().top;
-            // 差分だけ親コンテナをスクロールさせて、要素が画面上で動かないようにする
             const diff = currentY - prevY;
             listRef.current.scrollTop += diff;
           }
@@ -177,7 +171,6 @@
         }
       }, [selectedSongs, pendingScroll]);
 
-      // YouTube用テキスト生成
       const generatedText = useMemo(() => {
         const lines = [];
         lines.push("");
@@ -205,22 +198,18 @@
         return lines.join("\n");
       }, [bandName, members, hashtags, selectedSongs, useEncore]);
 
-      // 生成テキストが変更されたら編集用テキストを上書き
       useEffect(() => {
         setEditableText(generatedText);
       }, [generatedText]);
 
-      // コピー処理
-      const handleCopy = () => {
-        if (textAreaRef.current) {
-          textAreaRef.current.select();
-          try {
-            document.execCommand('copy');
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000);
-          } catch (err) {
-            console.error('Failed to copy', err);
-          }
+      // モダンなClipboard APIに変更
+      const handleCopy = async () => {
+        try {
+          await navigator.clipboard.writeText(editableText);
+          setIsCopied(true);
+          setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+          console.error('Failed to copy', err);
         }
       };
 
@@ -234,7 +223,6 @@
               </h1>
             </header>
 
-            {/* タブナビゲーション */}
             <div className="flex border-b border-slate-200 mb-6 bg-white rounded-t-lg overflow-hidden shadow-sm mx-1 sm:mx-0">
               <button
                 onClick={() => setActiveTab('preview')}
@@ -255,13 +243,10 @@
               </button>
             </div>
 
-            {/* --- タブ: 作成・プレビュー --- */}
             {activeTab === 'preview' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 
-                {/* 左側: バンド設定 & セットリスト */}
                 <div className="space-y-4 sm:space-y-6">
-                  {/* バンド設定 */}
                   <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
                     <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2">📋 Band Info</h2>
                     <div className="space-y-4">
@@ -296,7 +281,6 @@
                     </div>
                   </div>
 
-                  {/* 選択済みセットリスト */}
                   <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sm:p-6 mx-1 sm:mx-0">
                     <div className="flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 px-1 sm:px-0">
                       <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">🎸 セットリスト ({selectedSongs.length}曲)</h2>
@@ -316,14 +300,13 @@
                         selectedSongs.map((song, index) => (
                           <div key={index} className="flex items-center justify-between bg-white p-1.5 sm:p-3 rounded shadow-sm border border-slate-200 group gap-0.5 sm:gap-2">
                             <div className="flex items-center gap-1 sm:gap-3 overflow-hidden flex-1 min-w-0">
-                              <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30 flex-shrink-0"><ArrowUpIcon /></button>
+                              <button onClick={() => moveSong(index, 'up')} disabled={index === 0} className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30 flex-shrink-0"><ArrowUpIcon /></button>
                               <span className="bg-blue-100 text-blue-800 font-mono text-[9px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full min-w-[1.2rem] sm:min-w-[2rem] text-center flex-shrink-0">{index + 1}</span>
-                              {/* フォントサイズをスマホ時は 11px に指定して0.8倍相当に縮小 */}
                               <span className="text-[11px] sm:text-base font-medium truncate flex-1 leading-tight">{song}</span>
                             </div>
                             <div className="flex items-center gap-0 sm:gap-1 opacity-100 transition-opacity flex-shrink-0">
-                              <button onClick={() => moveSong(index, 'down')} disabled={index === selectedSongs.length - 1} className="p-1 sm:p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowDownIcon /></button>
-                              <button onClick={() => removeSelectedSong(index)} className="p-1 sm:p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-0.5 sm:ml-2"><TrashIcon /></button>
+                              <button onClick={() => moveSong(index, 'down')} disabled={index === selectedSongs.length - 1} className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-30"><ArrowDownIcon /></button>
+                              <button onClick={() => removeSelectedSong(index)} className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors ml-0.5 sm:ml-2"><TrashIcon /></button>
                             </div>
                           </div>
                         ))
@@ -343,7 +326,6 @@
                   </div>
                 </div>
 
-                {/* 右側: 出力 */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full min-h-[400px] sm:min-h-[600px] mx-1 sm:mx-0">
                   <div className="bg-slate-800 text-white px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                     <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">📝 YouTubeコピペ用出力</h2>
@@ -356,7 +338,6 @@
                   </div>
                   <div className="p-4 sm:p-6 flex-1 flex flex-col">
                     <textarea 
-                      ref={textAreaRef}
                       value={editableText}
                       onChange={(e) => setEditableText(e.target.value)}
                       className="w-full flex-1 p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -368,7 +349,6 @@
               </div>
             )}
 
-            {/* --- タブ: 曲リスト --- */}
             {activeTab === 'songs' && (
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 sm:mb-6 border-b pb-4 gap-2 sm:gap-0">
@@ -384,10 +364,9 @@
                 </div>
 
                 {fetchError && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 text-red-700 text-xs sm:text-sm rounded-md border border-red-200">{fetchError}</div>
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-amber-50 text-amber-800 text-xs sm:text-sm rounded-md border border-amber-200">{fetchError}</div>
                 )}
 
-                {/* 手動追加フォーム */}
                 <form onSubmit={handleAddSongToMaster} className="flex gap-2 mb-6 sm:mb-8 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
                   <input 
                     type="text" placeholder="CSVにない新しい曲名を追加..." value={newSongInput} onChange={(e) => setNewSongInput(e.target.value)}
@@ -398,7 +377,6 @@
                   </button>
                 </form>
 
-                {/* リスト表示 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {masterSongs.map((song, idx) => {
                     const isSelected = selectedSongs.includes(song);
