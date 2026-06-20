@@ -38,7 +38,7 @@
     const BAND_CHOICES = Object.keys(BAND_INFO);
     const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #PostWarBlues #BluesMusic";
 
-    // GoogleスプレッドシートのCSV公開URL
+    // 指定いただいたGoogleスプレッドシートのCSV公開URL
     const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzWOELNEzNkvAb1Nld1Tjzv0_Z5mvRvuQdeH20jy-LYP0cycHgpWcpR6rcSBFqm-5lGKZYLgSmW4cg/pub?gid=842461559&single=true&output=csv";
 
     // メインコンポーネント
@@ -71,10 +71,10 @@
       const handleBandChange = (e) => {
         const newBand = e.target.value;
         setBandName(newBand);
-        setMembers(BAND_INFO[newBand]); // メンバーを自動切り替え
+        setMembers(BAND_INFO[newBand]);
       };
 
-      // CSV読み込み（Googleスプレッドシート仕様に変更）
+      // CSV読み込み（Googleスプレッドシート仕様）
       useEffect(() => {
         setIsLoadingSongs(true);
         Papa.parse(SPREADSHEET_CSV_URL, {
@@ -83,15 +83,16 @@
           skipEmptyLines: true,
           complete: (results) => {
             try {
+              // 列名が「楽曲名」で取れない場合、自動的にスプレッドシートの「最初の列」を取得する安全仕様
               const songs = results.data
-                .map(row => row['楽曲名'])
+                .map(row => row['楽曲名'] || Object.values(row)[0])
                 .filter(song => song && song.trim() !== "");
               
               if (songs.length > 0) {
                 const uniqueSongs = Array.from(new Set(songs));
                 setMasterSongs(uniqueSongs);
               } else {
-                setFetchError("スプレッドシートから楽曲名を取得できませんでした。「楽曲名」という列名が存在するか確認してください。");
+                setFetchError("スプレッドシートから楽曲名を取得できませんでした。データが空か、公開設定を確認してください。");
               }
             } catch (err) {
               setFetchError("データの読み込み・解析に失敗しました。");
@@ -116,7 +117,7 @@
         }
       };
 
-      // 曲の選択状態を切り替え（追加・削除）
+      // 曲の選択状態を切り替え
       const toggleSongSelection = (song) => {
         if (selectedSongs.includes(song)) {
           setSelectedSongs(selectedSongs.filter(s => s !== song));
@@ -132,7 +133,7 @@
         setSelectedSongs(newSelected);
       };
 
-      // 選択済みの曲の順番を移動（連打できるようにスクロール位置を記憶）
+      // 選択済みの曲の順番を移動
       const moveSong = (index, direction) => {
         if (direction === 'up' && index === 0) return;
         if (direction === 'down' && index === selectedSongs.length - 1) return;
@@ -140,7 +141,6 @@
         const container = listRef.current;
         if (!container) return;
 
-        // 移動前の要素の画面上のY座標を取得
         const itemElement = container.children[index];
         const prevY = itemElement.getBoundingClientRect().top;
 
@@ -154,20 +154,17 @@
           newIndex = index + 1;
         }
 
-        // 次の描画でスクロール位置を調整するためのデータをセット
         setPendingScroll({ newIndex, prevY });
         setSelectedSongs(newSelected);
       };
 
-      // DOM更新後にスクロール位置を調整する（連打追従機能）
+      // DOM更新後にスクロール位置を調整
       useLayoutEffect(() => {
         if (pendingScroll && listRef.current) {
           const { newIndex, prevY } = pendingScroll;
           const newItemElement = listRef.current.children[newIndex];
           if (newItemElement) {
-            // 移動後の要素の画面上のY座標を取得
             const currentY = newItemElement.getBoundingClientRect().top;
-            // 差分だけ親コンテナをスクロールさせて、要素が画面上で動かないようにする
             const diff = currentY - prevY;
             listRef.current.scrollTop += diff;
           }
