@@ -264,10 +264,10 @@
       const emptyMsg = grid.parentNode.querySelector('.temporary-empty');
       if (emptyMsg) emptyMsg.remove();
 
-      grid.innerHTML = state.masterSongs.map((song) => {
+      grid.innerHTML = state.masterSongs.map((song, index) => {
         const isSelected = state.selectedSongs.includes(song);
         return `
-          <div onclick="toggleSongSelection('${escapeHtml(song).replace(/'/g, "\\'")}')" class="flex items-center p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors gap-2 sm:gap-3 ${isSelected ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}">
+          <div data-song-index="${index}" class="flex items-center p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors gap-2 sm:gap-3 ${isSelected ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}">
             <button class="flex-shrink-0 px-2 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold transition-all ${isSelected ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600'}">
               ${isSelected ? '削除' : '追加'}
             </button>
@@ -275,6 +275,16 @@
           </div>`;
       }).join('');
     }
+
+    // 曲名にアポストロフィーや引用符が含まれていてもonclick文字列の組み立てで壊れないよう、
+    // data-song-index属性 + イベント委任（クリック委譲）方式でクリックを処理する
+    document.getElementById('master-songs-grid').addEventListener('click', (e) => {
+      const card = e.target.closest('[data-song-index]');
+      if (!card) return;
+      const idx = parseInt(card.getAttribute('data-song-index'), 10);
+      const song = state.masterSongs[idx];
+      if (song !== undefined) toggleSongSelection(song);
+    });
 
     window.toggleSongSelection = (song) => {
       if (state.selectedSongs.includes(song)) {
