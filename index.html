@@ -44,6 +44,24 @@
     <div id="tab-preview-content" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       
       <div class="space-y-4 sm:space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sm:p-6 mx-1 sm:mx-0">
+          <div class="flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 px-1 sm:px-0">
+            <h2 id="setlist-title" class="text-base sm:text-xl font-semibold flex items-center gap-2">🎸 セットリスト (0曲)</h2>
+            <button onclick="setActiveTab('songs')" class="text-xs sm:text-sm text-blue-600 hover:underline">曲を追加する</button>
+          </div>
+
+          <div id="setlist-container" class="space-y-1.5 sm:space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-1 sm:p-4 rounded-lg border border-slate-200 scroll-smooth">
+            </div>
+
+          <div class="px-1 sm:px-0">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="encore-check" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+              <label for="encore-check" class="text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？</label>
+            </div>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-1 ml-6">※曲名の後ろに（アンコール曲）を付与</p>
+          </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mx-1 sm:mx-0">
           <h2 class="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2">📋 Band Info</h2>
           <div class="space-y-4">
@@ -60,24 +78,6 @@
               <label class="block text-xs sm:text-sm font-medium text-slate-700 mb-1">ハッシュタグ</label>
               <input id="hashtags-input" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
             </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-2 sm:p-6 mx-1 sm:mx-0">
-          <div class="flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 px-1 sm:px-0">
-            <h2 id="setlist-title" class="text-base sm:text-xl font-semibold flex items-center gap-2">🎸 セットリスト (0曲)</h2>
-            <button onclick="setActiveTab('songs')" class="text-xs sm:text-sm text-blue-600 hover:underline">曲を追加する</button>
-          </div>
-
-          <div id="setlist-container" class="space-y-1.5 sm:space-y-2 mb-4 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50 p-1 sm:p-4 rounded-lg border border-slate-200 scroll-smooth">
-            </div>
-
-          <div class="px-1 sm:px-0">
-            <div class="flex items-center gap-2">
-              <input type="checkbox" id="encore-check" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
-              <label for="encore-check" class="text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none">最後の曲はアンコール？</label>
-            </div>
-            <p class="text-[10px] sm:text-xs text-slate-500 mt-1 ml-6">※曲名の後ろに（アンコール曲）を付与</p>
           </div>
         </div>
       </div>
@@ -137,7 +137,7 @@
       "2120B.B.": `Vocal/Guitar:今井さん\nVocal/Harp:スズナ\nGuitar:グミさん\nBass:芳賀さん\nDrums:安永さん\nPiano:ヨッシー`
     };
     const BAND_CHOICES = Object.keys(BAND_INFO);
-    const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #PostWarBlues #BluesMusic";
+    const DEFAULT_HASHTAGS = "#BluesBand #ChicagoBlues #ElectricBlues #BluesHarp #BluesHarmonica #LiveBlues #LittleWalter #SonnyBoyWilliamsonII #BluesMusic";
 
     // --- Googleスプレッドシート公開CSV URL ---
     const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzWOELNEzNkvAb1Nld1Tjzv0_Z5mvRvuQdeH20jy-LYP0cycHgpWcpR6rcSBFqm-5lGKZYLgSmW4cg/pub?gid=842461559&single=true&output=csv";
